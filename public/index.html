@@ -686,22 +686,22 @@
                                 </label>
 
                                 <div id="schedSettings" style="border-top: 1px solid #d1fae5; padding-top: 16px;">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                                        <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Recurrence Schedule</label>
-                                        <div style="display: flex; align-items: center; gap: 8px;">
-                                            <span id="nextRunDisplay" style="font-size: 11px; color: #7c3aed; font-weight: 700;"></span>
-                                            <button id="btnTriggerSchedNow" type="button" style="padding: 4px 10px; font-size: 11px; font-weight: 600; background: #ede9fe; border: 1px solid #c4b5fd; color: #6d28d9; cursor: pointer; border-radius: 6px;">Run Now</button>
-                                        </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                        <label style="font-size: 12.5px; font-weight: 600; color: var(--text-secondary);">Recurrence Schedule</label>
+                                        <span id="nextRunDisplay" style="font-size: 11.5px; color: #7c3aed; font-weight: 700;"></span>
                                     </div>
 
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                                        <select id="confSchedFreq" style="padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--border-color); font-size: 13.5px; background: #ffffff;">
+                                    <div style="display: flex; gap: 10px; align-items: center;">
+                                        <select id="confSchedFreq" style="flex: 1.2; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--border-color); font-size: 13.5px; background: #ffffff;">
                                             <option value="daily">Every Day</option>
                                             <option value="weekly">Every Week</option>
                                             <option value="fortnightly">Every 15 Days</option>
                                             <option value="monthly">Every Month</option>
                                         </select>
-                                        <input type="time" id="confSchedTime" value="10:00" style="padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--border-color); font-size: 13.5px; background: #ffffff;">
+                                        <input type="time" id="confSchedTime" value="10:00" style="flex: 1; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--border-color); font-size: 13.5px; background: #ffffff;">
+                                        <button id="btnTriggerSchedNow" type="button" class="btn-run-now" title="Trigger schedule immediately">
+                                            <span>⚡</span> Run Now
+                                        </button>
                                     </div>
 
                                     <div id="weeklyDayGroup" style="margin-top: 12px; display: none;">
@@ -783,12 +783,12 @@
                                 <p style="color: var(--text-secondary); font-size: 12px; line-height: 1.5; margin: 0;">
                                     Sends WhatsApp alerts 2 days before, 1 day before, and on the deposit due date.
                                 </p>
-                                <div id="pdcSettingsPanel" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid #fee2e2; padding-top: 12px;">
-                                    <div>
-                                        <label style="font-size: 11.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; display: block;">Daily Alert Time</label>
-                                        <input type="time" id="confPdcTime" value="09:00" style="padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: #ffffff; font-size: 13px;">
+                                <div id="pdcSettingsPanel" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid #fee2e2; padding-top: 14px; margin-top: 10px;">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">Daily Alert Time:</label>
+                                        <input type="time" id="confPdcTime" value="09:00" style="padding: 8px 12px; border-radius: 8px; border: 1.5px solid var(--border-color); background: #ffffff; font-size: 13px;">
                                     </div>
-                                    <button id="btnTriggerPdcNow" type="button" class="btn-panel-action" style="background: #ffffff; margin-top: 16px;" onclick="triggerPdcNow()">
+                                    <button id="btnTriggerPdcNow" type="button" class="btn-panel-action" style="background: #ffffff; color: #dc2626; border-color: #fca5a5; font-weight: 600;" onclick="triggerPdcNow()">
                                         ▶ Test PDC Now
                                     </button>
                                 </div>

@@ -917,6 +917,7 @@ input[type="file"]:hover::file-selector-button {
 .busy-hero-card {
     background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
     border: 1px solid var(--border-color);
+    border-left: 5px solid #10b981;
     border-radius: 20px;
     padding: 26px 32px;
     box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
@@ -1228,10 +1229,11 @@ input[type="file"]:hover::file-selector-button {
 /* Segmented Control for Radio Buttons */
 .segmented-control {
     display: flex;
-    background: #f1f5f9;
+    background: #edf2f7;
     padding: 4px;
-    border-radius: 10px;
+    border-radius: 12px;
     gap: 4px;
+    border: 1px solid #e2e8f0;
 }
 
 .segmented-option {
@@ -1248,16 +1250,50 @@ input[type="file"]:hover::file-selector-button {
     transition: all 0.2s ease;
     user-select: none;
     text-align: center;
+    border: 1px solid transparent;
 }
 
 .segmented-option input[type="radio"] {
-    display: none;
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.segmented-option:hover {
+    color: var(--text);
 }
 
 .segmented-option:has(input[type="radio"]:checked) {
     background: #ffffff;
     color: #2563eb;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.12), 0 1px 2px rgba(0, 0, 0, 0.05);
+    border-color: rgba(37, 99, 235, 0.2);
+}
+
+.btn-run-now {
+    padding: 9px 15px;
+    font-size: 13px;
+    font-weight: 700;
+    background: #eff6ff;
+    border: 1.5px solid #bfdbfe;
+    color: #2563eb;
+    cursor: pointer;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.btn-run-now:hover {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    transform: translateY(-1px);
 }
 
 /* Modern Switch Toggle */
