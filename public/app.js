@@ -343,6 +343,16 @@ async function checkQueue() {
     }
 }
 
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 function updateQueueDisplay(data) {
     const list = document.getElementById('queueList');
     const count = document.getElementById('queueCount');
@@ -359,13 +369,14 @@ function updateQueueDisplay(data) {
     list.innerHTML = data.queue.map(item => `
         <div class="queue-item ${item.status}">
             <div class="q-header" style="display:flex; justify-content:space-between; align-items:center;">
-                <strong style="color: var(--text);">${item.number}</strong>
+                <strong style="color: var(--text); font-size: 15px;">${escapeHtml(item.number)}</strong>
                 <span class="status-badge" style="background: ${item.status === 'sent' ? 'var(--success)' : item.status === 'failed' ? 'var(--error)' : 'var(--warning)'}; color: white; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase;">${item.status}</span>
             </div>
-            <div class="q-msg" style="margin: 10px 0; color: var(--text-secondary); font-size: 14px; line-height: 1.4;">${item.message}</div>
-            <div class="q-meta" style="display:flex; justify-content:space-between; align-items:center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">
+            <div class="q-msg" style="margin: 10px 0; color: var(--text-secondary); font-size: 14px; line-height: 1.4;">${escapeHtml(item.message)}</div>
+            ${item.status === 'failed' && item.error ? `<div style="font-size: 12px; color: var(--error); margin: 6px 0 10px 0; background: rgba(239, 68, 68, 0.08); border-left: 3px solid var(--error); padding: 6px 10px; border-radius: 4px;">⚠️ Reason: ${escapeHtml(item.error)}</div>` : ''}
+            <div class="q-meta" style="display:flex; justify-content:space-between; align-items:center; border-top: 1px solid rgba(0,0,0,0.06); padding-top: 10px; margin-top: 5px;">
                 <span style="font-size: 12px; color: var(--text-muted);">Attempt: ${item.retryCount || 0}</span>
-                ${item.status === 'failed' ? `<button class="secondary" style="padding: 6px 12px; font-size: 11px;" onclick="resendMessage('${item.id}', '${item.number}')">🔄 Resend</button>` : ''}
+                ${item.status === 'failed' ? `<button class="secondary" style="background: var(--primary); color: white; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onclick="resendMessage('${escapeHtml(item.id)}', '${escapeHtml(item.number)}', this)">🔄 Retry Message</button>` : ''}
             </div>
         </div>
     `).join('');
@@ -431,16 +442,28 @@ function setupQueueActions() {
     }
 }
 
-window.resendMessage = async (id, number) => {
+window.resendMessage = async (id, number, btnEl) => {
     try {
-        await robustFetch('/resend', {
+        if (btnEl) {
+            btnEl.disabled = true;
+            btnEl.innerHTML = '⏳ Retrying...';
+            btnEl.style.opacity = '0.7';
+        }
+        const res = await robustFetch('/resend', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id, number })
         });
+        showToast(res.message || `Queued ${number} for retry`, 'success');
         checkQueue();
-        showToast('Retrying...', 'info');
-    } catch (e) { showToast(e.message, 'error'); }
+    } catch (e) {
+        showToast('Retry Failed: ' + (e.message || e), 'error');
+        if (btnEl) {
+            btnEl.disabled = false;
+            btnEl.innerHTML = '🔄 Retry Message';
+            btnEl.style.opacity = '1';
+        }
+    }
 };
 
 // ======================

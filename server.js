@@ -2664,9 +2664,10 @@ app.post("/api/v1/resend", async (req, res) => {
         // Find the job
         let jobIndex = -1;
         if (id) {
-            jobIndex = messageQueue.findIndex(job => (job.id || job.number + '_' + (job.createdAt || Date.now())) === id);
-        } else {
-            // Find last failed job for this number
+            jobIndex = messageQueue.findIndex(job => (job.id && job.id === id) || (job.id || (job.number + '_' + (job.createdAt || ''))) === id);
+        }
+        if (jobIndex === -1 && number) {
+            // Fallback: Find last failed job for this number
             for (let i = messageQueue.length - 1; i >= 0; i--) {
                 if (messageQueue[i].number === number && messageQueue[i].status === 'failed') {
                     jobIndex = i;
