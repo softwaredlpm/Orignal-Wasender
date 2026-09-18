@@ -2001,3 +2001,64 @@ async function testBusyApiEndpoint() {
         }
     }
 }
+
+// ==========================================
+// BUSY API Config - View Switcher & Fullscreen
+// ==========================================
+
+function setBusyViewMode(mode) {
+    const container = document.getElementById('busyLayoutContainer');
+    const btnSplit = document.getElementById('btnBusyViewSplit');
+    const btnDetailed = document.getElementById('btnBusyViewDetailed');
+
+    if (!container) return;
+
+    if (mode === 'detailed') {
+        container.className = 'busy-layout-container view-detailed';
+        if (btnSplit) btnSplit.classList.remove('active');
+        if (btnDetailed) btnDetailed.classList.add('active');
+    } else {
+        container.className = 'busy-layout-container view-split';
+        if (btnSplit) btnSplit.classList.add('active');
+        if (btnDetailed) btnDetailed.classList.remove('active');
+    }
+
+    try {
+        localStorage.setItem('busy_config_view_mode', mode);
+    } catch (e) {}
+}
+
+function toggleBusyFullscreen() {
+    const replica = document.getElementById('busyWindowReplica');
+    if (!replica) return;
+
+    const isFs = replica.classList.toggle('is-fullscreen');
+    if (isFs) {
+        document.body.style.overflow = 'hidden';
+        showToast('Full Screen enabled (Press Esc to exit)', 'info');
+    } else {
+        document.body.style.overflow = '';
+    }
+}
+
+// Listen for Escape key to exit fullscreen
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const replica = document.getElementById('busyWindowReplica');
+        if (replica && replica.classList.contains('is-fullscreen')) {
+            replica.classList.remove('is-fullscreen');
+            document.body.style.overflow = '';
+        }
+    }
+});
+
+// Restore user's preferred view mode on startup
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        const savedMode = localStorage.getItem('busy_config_view_mode');
+        if (savedMode) {
+            setBusyViewMode(savedMode);
+        }
+    } catch (e) {}
+});
+

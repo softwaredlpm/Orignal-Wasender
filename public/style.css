@@ -1386,4 +1386,252 @@ input[type="file"]:hover::file-selector-button {
 }
 #busyapiconfig button {
     transition: all 0.15s ease;
+}
+
+/* ========================================================
+   BUSY WhatsApp Configuration - Multi-Monitor & View Switcher
+   ======================================================== */
+
+.busy-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.busy-view-switcher {
+    display: inline-flex;
+    align-items: center;
+    background: #e2e8f0;
+    padding: 3px;
+    border-radius: 12px;
+    gap: 3px;
+}
+
+.busy-view-btn {
+    border: none;
+    background: transparent;
+    color: #475569;
+    font-size: 12.5px;
+    font-weight: 700;
+    padding: 7px 14px;
+    border-radius: 9px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+}
+
+.busy-view-btn:hover {
+    color: #0f172a;
+    background: rgba(255, 255, 255, 0.65);
+}
+
+.busy-view-btn.active {
+    background: #ffffff;
+    color: #2563eb;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-busy-fs {
+    background: #2563eb;
+    color: #ffffff;
+    border: none;
+    border-radius: 11px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+    transition: all 0.2s ease;
+}
+
+.btn-busy-fs:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+}
+
+/* Layout container modes */
+.busy-layout-container {
+    width: 100%;
+    transition: all 0.25s ease;
+}
+
+/* 1. Split View (Side by Side) */
+.busy-layout-container.view-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+}
+
+/* 2. Detailed Full Width View */
+.busy-layout-container.view-detailed {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.busy-layout-container.view-detailed .busy-window-replica {
+    width: 100%;
+}
+
+.busy-layout-container.view-detailed .busy-side-column {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 24px;
+    align-items: start;
+}
+
+/* BUSY 21 Window Title Bar & Window Controls */
+.busy-window-replica {
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.busy-win-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.busy-win-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+    transition: all 0.15s ease;
+}
+
+.busy-win-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+}
+
+.busy-win-btn.close-btn:hover {
+    background: #ef4444;
+    border-color: #ef4444;
+}
+
+/* Fullscreen Mode for Visual Replica */
+.busy-window-replica.is-fullscreen {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    border-radius: 0 !important;
+    z-index: 99999 !important;
+    overflow-y: auto !important;
+    background: #f1f5f9 !important;
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding-bottom: 50px;
+}
+
+.busy-window-replica.is-fullscreen .busy-win-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 16px 24px !important;
+}
+
+.busy-window-replica.is-fullscreen .busy-win-body {
+    max-width: 1350px;
+    margin: 24px auto !important;
+    padding: 32px !important;
+    background: #ffffff !important;
+    border-radius: 16px;
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.busy-fs-close-floating {
+    position: fixed;
+    top: 14px;
+    right: 24px;
+    z-index: 100001;
+    background: #ef4444;
+    color: #ffffff;
+    border: 2px solid #ffffff;
+    border-radius: 30px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    display: none;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.busy-fs-close-floating:hover {
+    background: #dc2626;
+    transform: scale(1.05);
+}
+
+.busy-window-replica.is-fullscreen .busy-fs-close-floating {
+    display: inline-flex !important;
+}
+
+/* Multi-Monitor Scaling & Responsive Breakpoints */
+@media (min-width: 1600px) {
+    /* 1080p, 2K, 4K & Ultra-Wide Screens */
+    .busy-layout-container.view-split {
+        grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+        gap: 32px;
+    }
+}
+
+@media (max-width: 1366px) {
+    /* Standard Laptops (1366x768, 1280x800) */
+    .main-content {
+        padding: 20px 24px !important;
+        gap: 20px !important;
+    }
+    .grid-top-stats {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 14px !important;
+    }
+    .busy-layout-container.view-split {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Tablets & Mobile */
+    .main-content {
+        padding: 16px 12px !important;
+    }
+    .grid-top-stats {
+        grid-template-columns: 1fr !important;
+    }
+    .busy-view-switcher {
+        width: 100%;
+        overflow-x: auto;
+    }
+    .busy-header-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
 }

@@ -1055,8 +1055,24 @@
                         One-click copy-paste API settings, parameter mappings, and treatment rules for <strong>BUSY 21 / 18 / 17</strong>.
                     </p>
                 </div>
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="display: flex; align-items: center; background: #fff; padding: 6px 14px; border-radius: 12px; border: 1px solid var(--border-color); font-size: 13px; gap: 8px;">
+                <div class="busy-header-actions">
+                    <!-- View Mode Switcher -->
+                    <div class="busy-view-switcher">
+                        <button type="button" class="busy-view-btn active" id="btnBusyViewSplit" onclick="setBusyViewMode('split')" title="Side-by-side view with tester on right">
+                            <span>🗂️</span> Split View
+                        </button>
+                        <button type="button" class="busy-view-btn" id="btnBusyViewDetailed" onclick="setBusyViewMode('detailed')" title="Detailed 100% full width view for all monitors">
+                            <span>🖥️</span> Detailed Full Width
+                        </button>
+                    </div>
+
+                    <!-- Full Screen Theater Mode -->
+                    <button type="button" class="btn-busy-fs" onclick="toggleBusyFullscreen()" title="Fit monitor in full screen">
+                        <span>⛶</span> Full Screen
+                    </button>
+
+                    <!-- Host Selector -->
+                    <div style="display: flex; align-items: center; background: #fff; padding: 6px 12px; border-radius: 11px; border: 1px solid var(--border-color); font-size: 13px; gap: 8px;">
                         <span style="color: var(--text-muted); font-weight: 500;">Host:</span>
                         <select id="busyHostSelector" onchange="updateBusyApiUrlDisplay()" style="border: none; background: transparent; font-size: 13px; font-weight: 700; color: var(--primary); outline: none; cursor: pointer;">
                             <option value="http://localhost:5000">localhost:5000 (Same PC)</option>
@@ -1068,7 +1084,7 @@
             </div>
 
             <!-- Top 4 Quick Copy Action Cards -->
-            <div class="grid-top-stats" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 18px; margin-bottom: 24px;">
+            <div class="grid-top-stats" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px;">
                 <!-- Card 1: API URL -->
                 <div class="stat-card" style="position: relative; overflow: hidden; border: 1.5px solid #bfdbfe; background: #f8fbff;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
@@ -1129,29 +1145,39 @@
                 </div>
             </div>
 
-            <!-- Visual BUSY 21 Simulation & Step-by-Step Layout (2-Column Grid) -->
-            <div class="grid-2" style="gap: 24px; align-items: start;">
+            <!-- Visual BUSY 21 Simulation & Step-by-Step Layout -->
+            <div id="busyLayoutContainer" class="busy-layout-container view-split">
                 <!-- LEFT COLUMN: Authentic BUSY 21 Window Replica -->
-                <div class="glass-card" style="padding: 0; overflow: hidden; border: 2px solid #cbd5e1; box-shadow: var(--shadow-lg);">
+                <div id="busyWindowReplica" class="glass-card busy-window-replica" style="padding: 0; overflow: hidden; border: 2px solid #cbd5e1; box-shadow: var(--shadow-lg); position: relative;">
+                    <!-- Floating Exit Fullscreen Button -->
+                    <button type="button" class="busy-fs-close-floating" onclick="toggleBusyFullscreen()">
+                        ✕ Exit Full Screen (Esc)
+                    </button>
+
                     <!-- BUSY Window Title Bar -->
-                    <div style="background: linear-gradient(180deg, #1e40af 0%, #1e3a8a 100%); color: #ffffff; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center;">
+                    <div class="busy-win-header" style="background: linear-gradient(180deg, #1e40af 0%, #1e3a8a 100%); color: #ffffff; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <span style="background: rgba(255,255,255,0.2); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;">BUSY 21</span>
                             <strong style="font-size: 14px;">WhatsApp/SMS Configuration</strong>
                             <span style="font-size: 12px; opacity: 0.85;">( Format Name - WhatsApp )</span>
                         </div>
-                        <span style="background: #10b981; color: #fff; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px;">Visual Replica</span>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="background: #10b981; color: #fff; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px;">Visual Replica</span>
+                            <div class="busy-win-controls">
+                                <button type="button" class="busy-win-btn" onclick="toggleBusyFullscreen()" title="Maximize / Full Screen">⛶</button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- BUSY Window Body -->
-                    <div style="padding: 24px; background: #fdfefe;">
+                    <div class="busy-win-body" style="padding: 24px; background: #fdfefe;">
                         <!-- Format Name & Server Row -->
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px dashed var(--border-color);">
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <span style="font-size: 13px; font-weight: 700; color: var(--text-secondary);">Format Name:</span>
                                 <div style="display: flex; align-items: center; gap: 6px;">
-                                    <input type="text" value="WhatsApp" readonly style="width: 130px; height: 32px; font-size: 13px; font-weight: 700; padding: 4px 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px;">
-                                    <button onclick="copyTextDirect('WhatsApp', this, 'Copied!')" class="secondary" style="height: 32px; padding: 0 10px; font-size: 12px; border-radius: 6px;" title="Copy Format Name">📋</button>
+                                    <input type="text" value="WhatsApp" readonly style="width: 130px; height: 34px; font-size: 13px; font-weight: 700; padding: 4px 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                    <button onclick="copyTextDirect('WhatsApp', this, 'Copied!')" class="secondary" style="height: 34px; padding: 0 10px; font-size: 12px; border-radius: 6px;" title="Copy Format Name">📋</button>
                                 </div>
                             </div>
                             <div style="display: flex; align-items: center; gap: 16px; font-size: 13px;">
@@ -1198,8 +1224,8 @@
                                 <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">( Parameter Name and Values are Case Sensitive )</span>
                                 <span style="font-size: 11.5px; color: var(--text-muted);">Change at Run Time: <strong>N</strong></span>
                             </div>
-                            <div style="border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden;">
-                                <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+                            <div style="border: 1px solid var(--border-color); border-radius: 10px; overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; min-width: 420px;">
                                     <thead style="background: #f1f5f9; border-bottom: 1px solid var(--border-color);">
                                         <tr>
                                             <th style="padding: 10px 14px; font-weight: 700; color: var(--text-secondary); width: 35%;">Parameter Name</th>
@@ -1279,7 +1305,7 @@
                         </div>
 
                         <!-- Checkboxes to Uncheck -->
-                        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+                        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; margin-bottom: 20px;">
                             <label style="display: flex; align-items: center; gap: 8px; color: var(--text-secondary);">
                                 <input type="checkbox" disabled style="width: 16px; height: 16px;">
                                 Remove Line Feed from Message
@@ -1291,11 +1317,30 @@
                                 <span style="font-size: 11px; color: var(--error); font-weight: 600;">(LEAVE UNCHECKED so multiple invoices can be sent)</span>
                             </label>
                         </div>
+
+                        <!-- BUSY Dialog Action Buttons (F2 - Save, Quit) -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding-top: 18px; border-top: 2px solid #e2e8f0;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Status in BUSY:</span>
+                                <span style="background: #ecfdf5; color: #047857; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 20px; border: 1px solid #a7f3d0;">● Ready to Send</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <button type="button" onclick="showToast('In BUSY Accounting, press F2 or click Save on the bottom right to finalize this configuration.', 'info')" class="primary" style="height: 38px; padding: 0 18px; font-size: 13px; border-radius: 8px; font-weight: 700; gap: 6px;">
+                                    <span>💾</span> F2 - Save
+                                </button>
+                                <button type="button" onclick="showToast('Format saved in BUSY as WhatsApp', 'success')" class="secondary" style="height: 38px; padding: 0 14px; font-size: 13px; border-radius: 8px; font-weight: 600;">
+                                    Format Details
+                                </button>
+                                <button type="button" onclick="setBusyViewMode('split')" class="secondary" style="height: 38px; padding: 0 14px; font-size: 13px; border-radius: 8px;">
+                                    Quit
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- RIGHT COLUMN: Interactive Tester & Step-by-Step Guide -->
-                <div style="display: flex; flex-direction: column; gap: 24px;">
+                <div class="busy-side-column" style="display: flex; flex-direction: column; gap: 24px;">
                     <!-- Live API Tester Card -->
                     <div class="glass-card" style="border: 1px solid var(--border-color);">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
