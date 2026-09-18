@@ -1599,10 +1599,10 @@ async function sendMessageJob(job) {
     // SAFETY: Randomize text hash (Invisible to user, unique to WhatsApp)
     const safeMessage = randomizeText(message);
 
-    const assignedClientId = job.whatsappClientId || "auto_rotate";
+    const assignedClientId = job.whatsappClientId || "default";
     let clientInfo = null;
 
-    // Mode B: Smart Account Load-Balancer / Batch Rotation
+    // Mode B: Smart Account Load-Balancer / Batch Rotation (Only when explicitly set to auto_rotate)
     if (assignedClientId === "auto_rotate" || assignedClientId === "rotate") {
         const readyClients = [...clients.values()].filter(c => c.isReady);
         if (readyClients.length === 0) {
