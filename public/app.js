@@ -825,7 +825,7 @@ async function fetchAndRenderAccounts(keepSelection = true) {
             const isClientReady = c.ready === true || c.status === 'ready';
             const statusClass = isClientReady ? 'success' : (c.status === 'authenticating' ? 'warning' : 'error');
             const displayStatus = isClientReady ? 'Connected' : (c.status === 'authenticating' ? 'Connecting/Scan QR' : 'Disconnected');
-            const displayNum = c.number ? `<span style="color: var(--text-secondary); font-size: 13px; font-weight: 600;">(${formatPhoneNumber(c.number)})</span>` : '';
+            const displayNum = (isClientReady && c.number) ? `<span style="color: var(--text-secondary); font-size: 13px; font-weight: 600;">(${formatPhoneNumber(c.number)})</span>` : '';
             const portBadge = c.port ? `<span style="background:#eff6ff; color:#1d4ed8; font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; font-family:monospace; border:1px solid #bfdbfe;">:${c.port}</span>` : '';
 
             row.innerHTML = `

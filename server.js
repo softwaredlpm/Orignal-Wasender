@@ -1916,9 +1916,9 @@ app.get("/api/v1/status", async (req, res) => {
         });
     }
 
-    const resolvedNumber = clientInfo.number || (clientInfo.client && clientInfo.client.info && clientInfo.client.info.wid ? clientInfo.client.info.wid.user : null);
-    const resolvedPort = clientPorts.get(clientId) || (clientId === 'default' ? port : null);
     const isReady = clientInfo.isReady || clientInfo.status === 'ready';
+    const resolvedNumber = isReady ? (clientInfo.number || (clientInfo.client && clientInfo.client.info && clientInfo.client.info.wid ? clientInfo.client.info.wid.user : null)) : null;
+    const resolvedPort = clientPorts.get(clientId) || (clientId === 'default' ? port : null);
 
     res.json({
         status: isReady ? 'ready' : clientInfo.status,
@@ -2013,9 +2013,9 @@ app.get("/api/v1/debug-screenshot", async (req, res) => {
 app.get("/api/v1/clients", (req, res) => {
     const list = [];
     for (const [clientId, info] of clients.entries()) {
-        const resolvedNumber = info.number || (info.client && info.client.info && info.client.info.wid ? info.client.info.wid.user : null);
-        const resolvedPort = clientPorts.get(clientId) || (clientId === 'default' ? port : null);
         const isReady = info.isReady || info.status === 'ready';
+        const resolvedNumber = isReady ? (info.number || (info.client && info.client.info && info.client.info.wid ? info.client.info.wid.user : null)) : null;
+        const resolvedPort = clientPorts.get(clientId) || (clientId === 'default' ? port : null);
         list.push({
             id: clientId,
             name: info.name,
