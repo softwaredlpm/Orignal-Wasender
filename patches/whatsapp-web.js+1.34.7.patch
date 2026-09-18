@@ -1,0 +1,101 @@
+diff --git a/node_modules/whatsapp-web.js/src/Client.js b/node_modules/whatsapp-web.js/src/Client.js
+index a122a8f..7a9436b 100644
+--- a/node_modules/whatsapp-web.js/src/Client.js
++++ b/node_modules/whatsapp-web.js/src/Client.js
+@@ -1607,7 +1607,11 @@ class Client extends EventEmitter {
+                     content,
+                     options,
+                 );
+-                return msg ? window.WWebJS.getMessageModel(msg) : undefined;
++                try {
++                    return msg ? window.WWebJS.getMessageModel(msg) : undefined;
++                } catch (modelErr) {
++                    return msg ? { id: msg.id, ack: 0, from: msg.from, to: msg.to } : undefined;
++                }
+             },
+             chatId,
+             content,
+diff --git a/node_modules/whatsapp-web.js/src/util/Injected/Utils.js b/node_modules/whatsapp-web.js/src/util/Injected/Utils.js
+index dfa30a5..e82db29 100644
+--- a/node_modules/whatsapp-web.js/src/util/Injected/Utils.js
++++ b/node_modules/whatsapp-web.js/src/util/Injected/Utils.js
+@@ -483,6 +483,13 @@ exports.LoadUtils = () => {
+             ...extraOptions,
+         };
+ 
++        // FIX (wwebjs PR #201923): WhatsApp Web 2.3000.1047xxx+ sets __x_id on mediaOptions
++        // which overwrites message.id with undefined, causing the memoize getter crash.
++        // Also re-assert id/to in case any spread clobbered them.
++        delete message.__x_id;
++        message.id = newMsgKey;
++        message.to = chat.id;
++
+         // Bot's won't reply if canonicalUrl is set (linking)
+         if (botOptions) {
+             delete message.canonicalUrl;
+@@ -861,6 +868,14 @@ exports.LoadUtils = () => {
+                 chat = null;
+             }
+         } else {
++            // Self-Healing: Ensure contact entry is primed in WhatsApp's internal DB before opening/creating chat
++            try {
++                const contactColl = window.require('WAWebCollections').Contact;
++                if (contactColl && !contactColl.get(chatWid)) {
++                    await contactColl.find(chatWid).catch(() => {});
++                }
++            } catch (e) {}
++
+             chat =
+                 window.require('WAWebCollections').Chat.get(chatWid) ||
+                 (
+@@ -1034,24 +1049,32 @@ exports.LoadUtils = () => {
+             }
+         }
+ 
+-        const ContactMethods = window.require('WAWebContactGetters');
+-        res.isMe = ContactMethods.getIsMe(contact);
+-        res.isUser = ContactMethods.getIsUser(contact);
+-        res.isGroup = ContactMethods.getIsGroup(contact);
+-        res.isWAContact = ContactMethods.getIsWAContact(contact);
+-        res.userid = ContactMethods.getUserid(contact);
+-        res.verifiedName = ContactMethods.getVerifiedName(contact);
+-        res.verifiedLevel = ContactMethods.getVerifiedLevel(contact);
+-        res.statusMute = ContactMethods.getStatusMute(contact);
+-        res.name = ContactMethods.getName(contact);
+-        res.shortName = ContactMethods.getShortName(contact);
+-        res.pushname = ContactMethods.getPushname(contact);
+-
+-        const { getIsMyContact } = window.require(
+-            'WAWebFrontendContactGetters',
+-        );
+-        res.isMyContact = getIsMyContact(contact);
+-        res.isEnterprise = ContactMethods.getIsEnterprise(contact);
++        try {
++            const ContactMethods = window.require('WAWebContactGetters');
++            if (ContactMethods) {
++                try { res.isMe = ContactMethods.getIsMe(contact); } catch (e) { res.isMe = false; }
++                try { res.isUser = ContactMethods.getIsUser(contact); } catch (e) { res.isUser = true; }
++                try { res.isGroup = ContactMethods.getIsGroup(contact); } catch (e) { res.isGroup = false; }
++                try { res.isWAContact = ContactMethods.getIsWAContact(contact); } catch (e) { res.isWAContact = true; }
++                try { res.userid = ContactMethods.getUserid(contact); } catch (e) { }
++                try { res.verifiedName = ContactMethods.getVerifiedName(contact); } catch (e) { }
++                try { res.verifiedLevel = ContactMethods.getVerifiedLevel(contact); } catch (e) { }
++                try { res.statusMute = ContactMethods.getStatusMute(contact); } catch (e) { }
++                try { res.name = ContactMethods.getName(contact); } catch (e) { }
++                try { res.shortName = ContactMethods.getShortName(contact); } catch (e) { }
++                try { res.pushname = ContactMethods.getPushname(contact); } catch (e) { }
++                try { res.isEnterprise = ContactMethods.getIsEnterprise(contact); } catch (e) { res.isEnterprise = false; }
++            }
++        } catch (e) { }
++
++        try {
++            const { getIsMyContact } = window.require(
++                'WAWebFrontendContactGetters',
++            );
++            if (typeof getIsMyContact === 'function') {
++                res.isMyContact = getIsMyContact(contact);
++            }
++        } catch (e) { res.isMyContact = false; }
+ 
+         return res;
+     };
