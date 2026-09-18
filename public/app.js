@@ -1870,3 +1870,134 @@ function pollUpdateProgress() {
     }, 1200);
 }
 
+// ==========================================
+// BUSY WhatsApp Configuration Copy & Test Helpers
+// ==========================================
+function copyTextDirect(text, btnElement, successMsg = 'Copied!') {
+    if (!text) return;
+    const triggerVisualFeedback = () => {
+        showToast(successMsg, 'success');
+        if (btnElement) {
+            const origHtml = btnElement.innerHTML;
+            btnElement.innerHTML = '✅ Copied!';
+            btnElement.style.borderColor = '#10b981';
+            setTimeout(() => {
+                btnElement.innerHTML = origHtml;
+                btnElement.style.borderColor = '';
+            }, 1800);
+        }
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(triggerVisualFeedback).catch(() => {
+            fallbackCopyText(text, triggerVisualFeedback);
+        });
+    } else {
+        fallbackCopyText(text, triggerVisualFeedback);
+    }
+}
+
+function fallbackCopyText(text, callback) {
+    try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.top = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (typeof callback === 'function') callback();
+    } catch (e) {
+        showToast('Failed to copy. Please copy manually.', 'error');
+    }
+}
+
+function copyBusyField(elementId, btnElement, successMsg = 'Copied!') {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const text = (el.value !== undefined ? el.value : (el.innerText || el.textContent || '')).trim();
+    copyTextDirect(text, btnElement, successMsg);
+}
+
+function updateBusyApiUrlDisplay() {
+    const selector = document.getElementById('busyHostSelector');
+    let host = 'http://localhost:5000';
+    if (selector) {
+        if (selector.value === 'current') {
+            host = window.location.origin;
+        } else {
+            host = selector.value;
+        }
+    }
+    const fullApiUrl = `${host}/api/v1/send?`;
+
+    const quickDisplay = document.getElementById('quickApiUrlDisplay');
+    if (quickDisplay) quickDisplay.textContent = fullApiUrl;
+
+    const replicaInput = document.getElementById('replicaApiInput');
+    if (replicaInput) replicaInput.value = fullApiUrl;
+}
+
+async function testBusyApiEndpoint() {
+    const mobileInput = document.getElementById('testBusyMobile');
+    const msgInput = document.getElementById('testBusyMessage');
+    const resultDiv = document.getElementById('testBusyApiResult');
+    const btn = document.getElementById('btnTestBusyApi');
+
+    const mobile = (mobileInput?.value || '').trim();
+    const message = (msgInput?.value || '').trim();
+
+    if (!mobile) {
+        showToast('Please enter a recipient mobile number', 'warning');
+        if (mobileInput) mobileInput.focus();
+        return;
+    }
+    if (!message) {
+        showToast('Please enter a test message', 'warning');
+        if (msgInput) msgInput.focus();
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = 'Sending test message...';
+    }
+
+    try {
+        const testUrl = `/api/v1/send?Mobile=${encodeURIComponent(mobile)}&Message=${encodeURIComponent(message)}`;
+        const res = await fetch(testUrl, { method: 'GET' });
+        const data = await res.json();
+
+        if (resultDiv) {
+            resultDiv.style.display = 'block';
+            if (res.ok && data.success) {
+                resultDiv.style.background = '#ecfdf5';
+                resultDiv.style.color = '#065f46';
+                resultDiv.style.border = '1px solid #a7f3d0';
+                resultDiv.innerHTML = `✅ <strong>Success! Message received by WA Sender:</strong><br><pre style="margin-top: 6px; font-size: 11.5px; background: rgba(0,0,0,0.04); padding: 8px; border-radius: 6px;">${JSON.stringify(data, null, 2)}</pre>`;
+                showToast('Test message queued successfully!', 'success');
+            } else {
+                resultDiv.style.background = '#fef2f2';
+                resultDiv.style.color = '#991b1b';
+                resultDiv.style.border = '1px solid #fecaca';
+                resultDiv.innerHTML = `❌ <strong>API Error:</strong> ${data.error || 'Failed to queue message'}`;
+                showToast(data.error || 'Failed to send test message', 'error');
+            }
+        }
+    } catch (err) {
+        if (resultDiv) {
+            resultDiv.style.display = 'block';
+            resultDiv.style.background = '#fef2f2';
+            resultDiv.style.color = '#991b1b';
+            resultDiv.style.border = '1px solid #fecaca';
+            resultDiv.innerHTML = `❌ <strong>Network request failed:</strong> ${err.message}`;
+        }
+        showToast('Network error while testing API', 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<span>🚀</span> Test Send from BUSY API';
+        }
+    }
+}

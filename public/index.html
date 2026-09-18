@@ -90,6 +90,9 @@
                 <span>⚙️</span> Settings
             </a>
             <div style="margin: 10px 0; border-top: 1px solid var(--border-color);"></div>
+            <a href="#" class="nav-link" data-tab="busyapiconfig" style="color: #2563eb; font-weight: 600;">
+                <span>📋</span> BUSY API Config
+            </a>
             <a href="#" class="nav-link" data-tab="busy" style="color: #10b981; display: none;">
                 <span>⚡</span> Busy Automator
             </a>
@@ -1043,6 +1046,330 @@
             </div>
         </div>
 
+        <!-- BUSY API CONFIG TAB -->
+        <div id="busyapiconfig" class="tab-content">
+            <div class="header" style="margin-bottom: 24px;">
+                <div>
+                    <h2><span>📋</span> BUSY WhatsApp Configuration</h2>
+                    <p style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;">
+                        One-click copy-paste API settings, parameter mappings, and treatment rules for <strong>BUSY 21 / 18 / 17</strong>.
+                    </p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="display: flex; align-items: center; background: #fff; padding: 6px 14px; border-radius: 12px; border: 1px solid var(--border-color); font-size: 13px; gap: 8px;">
+                        <span style="color: var(--text-muted); font-weight: 500;">Host:</span>
+                        <select id="busyHostSelector" onchange="updateBusyApiUrlDisplay()" style="border: none; background: transparent; font-size: 13px; font-weight: 700; color: var(--primary); outline: none; cursor: pointer;">
+                            <option value="http://localhost:5000">localhost:5000 (Same PC)</option>
+                            <option value="http://127.0.0.1:5000">127.0.0.1:5000 (Local Loopback)</option>
+                            <option value="current">Current Browser Host</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top 4 Quick Copy Action Cards -->
+            <div class="grid-top-stats" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 18px; margin-bottom: 24px;">
+                <!-- Card 1: API URL -->
+                <div class="stat-card" style="position: relative; overflow: hidden; border: 1.5px solid #bfdbfe; background: #f8fbff;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div class="label" style="color: #1d4ed8;">1. WhatsApp API URL</div>
+                        <span style="font-size: 18px;">🔗</span>
+                    </div>
+                    <div id="quickApiUrlDisplay" style="font-size: 13.5px; font-weight: 700; color: var(--text); word-break: break-all; margin: 4px 0 10px; font-family: 'Consolas', monospace; background: #ffffff; padding: 8px 10px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        http://localhost:5000/api/v1/send?
+                    </div>
+                    <button class="primary" onclick="copyBusyField('quickApiUrlDisplay', this, 'Copied API URL!')" style="height: 38px; font-size: 13px; border-radius: 10px; justify-content: center; gap: 6px;">
+                        <span>📋</span> Copy API URL
+                    </button>
+                </div>
+
+                <!-- Card 2: Mobile Parameter -->
+                <div class="stat-card" style="position: relative; overflow: hidden; border: 1.5px solid #bbf7d0; background: #f0fdf4;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div class="label" style="color: #15803d;">2. Mobile Parameter Name</div>
+                        <span style="font-size: 18px;">📱</span>
+                    </div>
+                    <div style="margin: 4px 0 10px;">
+                        <span id="quickMobileParam" style="font-size: 20px; font-weight: 800; color: #15803d; font-family: 'Consolas', monospace;">Mobile</span>
+                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">Value: ( To be picked while sending )</div>
+                    </div>
+                    <button class="secondary" onclick="copyTextDirect('Mobile', this, 'Copied Mobile!')" style="height: 38px; font-size: 13px; border-radius: 10px; justify-content: center; gap: 6px; border-color: #86efac; color: #15803d; background: #ffffff;">
+                        <span>📋</span> Copy "Mobile"
+                    </button>
+                </div>
+
+                <!-- Card 3: Message Parameter -->
+                <div class="stat-card" style="position: relative; overflow: hidden; border: 1.5px solid #fed7aa; background: #fffaf5;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div class="label" style="color: #c2410c;">3. Message Parameter Name</div>
+                        <span style="font-size: 18px;">💬</span>
+                    </div>
+                    <div style="margin: 4px 0 10px;">
+                        <span id="quickMessageParam" style="font-size: 20px; font-weight: 800; color: #c2410c; font-family: 'Consolas', monospace;">Message</span>
+                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">Value: ( To be picked while sending )</div>
+                    </div>
+                    <button class="secondary" onclick="copyTextDirect('Message', this, 'Copied Message!')" style="height: 38px; font-size: 13px; border-radius: 10px; justify-content: center; gap: 6px; border-color: #fdba74; color: #c2410c; background: #ffffff;">
+                        <span>📋</span> Copy "Message"
+                    </button>
+                </div>
+
+                <!-- Card 4: Mobile Treatment -->
+                <div class="stat-card" style="position: relative; overflow: hidden; border: 1.5px solid #e9d5ff; background: #faf5ff;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div class="label" style="color: #7e22ce;">4. Number Treatment</div>
+                        <span style="font-size: 18px;">🎯</span>
+                    </div>
+                    <div style="margin: 4px 0 10px;">
+                        <div style="font-size: 14px; font-weight: 700; color: #7e22ce;">Truncate with Prefix</div>
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Length: <strong>10</strong> | Prefix: <strong>91</strong></div>
+                    </div>
+                    <button class="secondary" onclick="copyTextDirect('91', this, 'Copied 91!')" style="height: 38px; font-size: 13px; border-radius: 10px; justify-content: center; gap: 6px; border-color: #d8b4fe; color: #7e22ce; background: #ffffff;">
+                        <span>📋</span> Copy Prefix "91"
+                    </button>
+                </div>
+            </div>
+
+            <!-- Visual BUSY 21 Simulation & Step-by-Step Layout (2-Column Grid) -->
+            <div class="grid-2" style="gap: 24px; align-items: start;">
+                <!-- LEFT COLUMN: Authentic BUSY 21 Window Replica -->
+                <div class="glass-card" style="padding: 0; overflow: hidden; border: 2px solid #cbd5e1; box-shadow: var(--shadow-lg);">
+                    <!-- BUSY Window Title Bar -->
+                    <div style="background: linear-gradient(180deg, #1e40af 0%, #1e3a8a 100%); color: #ffffff; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="background: rgba(255,255,255,0.2); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;">BUSY 21</span>
+                            <strong style="font-size: 14px;">WhatsApp/SMS Configuration</strong>
+                            <span style="font-size: 12px; opacity: 0.85;">( Format Name - WhatsApp )</span>
+                        </div>
+                        <span style="background: #10b981; color: #fff; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px;">Visual Replica</span>
+                    </div>
+
+                    <!-- BUSY Window Body -->
+                    <div style="padding: 24px; background: #fdfefe;">
+                        <!-- Format Name & Server Row -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px dashed var(--border-color);">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 13px; font-weight: 700; color: var(--text-secondary);">Format Name:</span>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <input type="text" value="WhatsApp" readonly style="width: 130px; height: 32px; font-size: 13px; font-weight: 700; padding: 4px 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                    <button onclick="copyTextDirect('WhatsApp', this, 'Copied!')" class="secondary" style="height: 32px; padding: 0 10px; font-size: 12px; border-radius: 6px;" title="Copy Format Name">📋</button>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 16px; font-size: 13px;">
+                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text);">
+                                    <input type="checkbox" checked disabled style="accent-color: #2563eb; width: 16px; height: 16px;">
+                                    <strong>Send PDF link for Invoice</strong>
+                                    <span style="background: #eff6ff; color: #2563eb; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 6px;">CHECK</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Server Type Radio Selection -->
+                        <div style="background: #f8fafc; padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                            <span style="font-size: 13px; font-weight: 700; color: var(--text);">Server Type:</span>
+                            <div style="display: flex; gap: 20px; font-size: 13px;">
+                                <label style="display: flex; align-items: center; gap: 6px; color: var(--text-muted); cursor: not-allowed;">
+                                    <input type="radio" name="busyServerType" disabled> Busy Server
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 6px; color: #166534; font-weight: 700;">
+                                    <input type="radio" name="busyServerType" checked style="accent-color: #166534;">
+                                    Service Provider Server
+                                    <span style="background: #dcfce7; color: #166534; font-size: 10px; padding: 2px 6px; border-radius: 6px;">SELECT THIS</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- WhatsApp/SMS API URL Box -->
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 6px;">
+                                <span>WhatsApp/SMS API:</span>
+                                <span style="font-size: 11.5px; color: #2563eb; font-weight: 600;">(Paste full URL including trailing ?)</span>
+                            </label>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="replicaApiInput" value="http://localhost:5000/api/v1/send?" readonly style="flex: 1; height: 42px; font-family: 'Consolas', monospace; font-size: 13.5px; font-weight: 700; background: #fff; border: 2px solid #3b82f6; border-radius: 10px; padding: 0 14px; color: #1e3a8a;">
+                                <button onclick="copyBusyField('replicaApiInput', this, 'Copied API URL!')" class="primary" style="height: 42px; padding: 0 18px; font-size: 13px; border-radius: 10px; gap: 6px;">
+                                    <span>📋</span> Copy
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Parameters Table -->
+                        <div style="margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">( Parameter Name and Values are Case Sensitive )</span>
+                                <span style="font-size: 11.5px; color: var(--text-muted);">Change at Run Time: <strong>N</strong></span>
+                            </div>
+                            <div style="border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+                                    <thead style="background: #f1f5f9; border-bottom: 1px solid var(--border-color);">
+                                        <tr>
+                                            <th style="padding: 10px 14px; font-weight: 700; color: var(--text-secondary); width: 35%;">Parameter Name</th>
+                                            <th style="padding: 10px 14px; font-weight: 700; color: var(--text-secondary); width: 45%;">Parameter Value</th>
+                                            <th style="padding: 10px 14px; font-weight: 700; color: var(--text-secondary); text-align: right; width: 20%;">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                                            <td style="padding: 9px 14px; color: var(--text-muted);">User Name</td>
+                                            <td style="padding: 9px 14px; color: var(--text-muted); font-style: italic;">Leave Empty</td>
+                                            <td style="padding: 9px 14px; text-align: right;"><span style="color: var(--text-muted); font-size: 11px;">-</span></td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                                            <td style="padding: 9px 14px; color: var(--text-muted);">Password</td>
+                                            <td style="padding: 9px 14px; color: var(--text-muted); font-style: italic;">Leave Empty</td>
+                                            <td style="padding: 9px 14px; text-align: right;"><span style="color: var(--text-muted); font-size: 11px;">-</span></td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                                            <td style="padding: 9px 14px; color: var(--text-muted);">Senders ID</td>
+                                            <td style="padding: 9px 14px; color: var(--text-muted); font-style: italic;">Leave Empty</td>
+                                            <td style="padding: 9px 14px; text-align: right;"><span style="color: var(--text-muted); font-size: 11px;">-</span></td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #f1f5f9; background: #f0fdf4;">
+                                            <td style="padding: 10px 14px; font-weight: 800; color: #166534; font-family: 'Consolas', monospace; font-size: 14px;">Mobile</td>
+                                            <td style="padding: 10px 14px; color: #166534; font-weight: 600; font-size: 12px;">( To be picked while sending WhatsApp/SMS )</td>
+                                            <td style="padding: 10px 14px; text-align: right;">
+                                                <button onclick="copyTextDirect('Mobile', this, 'Copied!')" class="secondary" style="height: 28px; padding: 0 10px; font-size: 11.5px; border-radius: 6px; border-color: #86efac; color: #166534; background: #fff;">📋 Copy</button>
+                                            </td>
+                                        </tr>
+                                        <tr style="background: #fffaf5;">
+                                            <td style="padding: 10px 14px; font-weight: 800; color: #9a3412; font-family: 'Consolas', monospace; font-size: 14px;">Message</td>
+                                            <td style="padding: 10px 14px; color: #9a3412; font-weight: 600; font-size: 12px;">( To be picked while sending WhatsApp/SMS )</td>
+                                            <td style="padding: 10px 14px; text-align: right;">
+                                                <button onclick="copyTextDirect('Message', this, 'Copied!')" class="secondary" style="height: 28px; padding: 0 10px; font-size: 11.5px; border-radius: 6px; border-color: #fdba74; color: #9a3412; background: #fff;">📋 Copy</button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px; text-align: right;">
+                                No. of Other Parameters: <strong>0</strong>
+                            </div>
+                        </div>
+
+                        <!-- Treatment of Mobile Number -->
+                        <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 18px;">
+                            <div style="font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                                <span>Treatment of Mobile Number</span>
+                                <span style="background: #eff6ff; color: #2563eb; font-size: 10.5px; padding: 2px 8px; border-radius: 8px;">CRITICAL SETTING</span>
+                            </div>
+                            <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap; font-size: 13px; margin-bottom: 12px;">
+                                <label style="display: flex; align-items: center; gap: 6px; color: var(--text-muted);">
+                                    <input type="radio" name="treatmentRadio" disabled> Leave as it is
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 6px; color: var(--text-muted);">
+                                    <input type="radio" name="treatmentRadio" disabled> Truncate
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 6px; color: #2563eb; font-weight: 700;">
+                                    <input type="radio" name="treatmentRadio" checked style="accent-color: #2563eb;">
+                                    Truncate with Prefix
+                                </label>
+                            </div>
+                            <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap; background: #fff; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 12.5px; color: var(--text-secondary); font-weight: 600;">Mobile number Length:</span>
+                                    <input type="text" value="10" readonly style="width: 50px; height: 32px; text-align: center; font-weight: 700; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                    <button onclick="copyTextDirect('10', this, 'Copied!')" class="secondary" style="height: 32px; padding: 0 8px; font-size: 11px;">📋</button>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 12.5px; color: var(--text-secondary); font-weight: 600;">Prefix:</span>
+                                    <input type="text" value="91" readonly style="width: 50px; height: 32px; text-align: center; font-weight: 700; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; color: #2563eb;">
+                                    <button onclick="copyTextDirect('91', this, 'Copied!')" class="secondary" style="height: 32px; padding: 0 8px; font-size: 11px;">📋</button>
+                                </div>
+                                <span style="font-size: 11.5px; color: var(--text-muted); margin-left: auto;">(Converts 10-digit mobile into country code 91XXXXXXXXXX)</span>
+                            </div>
+                        </div>
+
+                        <!-- Checkboxes to Uncheck -->
+                        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+                            <label style="display: flex; align-items: center; gap: 8px; color: var(--text-secondary);">
+                                <input type="checkbox" disabled style="width: 16px; height: 16px;">
+                                Remove Line Feed from Message
+                                <span style="font-size: 11px; color: var(--error); font-weight: 600;">(LEAVE UNCHECKED to preserve line breaks)</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; color: var(--text-secondary);">
+                                <input type="checkbox" disabled style="width: 16px; height: 16px;">
+                                Avoid sending duplicate messages to WhatsApp
+                                <span style="font-size: 11px; color: var(--error); font-weight: 600;">(LEAVE UNCHECKED so multiple invoices can be sent)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN: Interactive Tester & Step-by-Step Guide -->
+                <div style="display: flex; flex-direction: column; gap: 24px;">
+                    <!-- Live API Tester Card -->
+                    <div class="glass-card" style="border: 1px solid var(--border-color);">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+                            <div style="width: 36px; height: 36px; border-radius: 10px; background: #eff6ff; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                                ⚡
+                            </div>
+                            <div>
+                                <h3 style="margin: 0; font-size: 16px; font-weight: 700;">Live BUSY API Tester</h3>
+                                <span style="font-size: 12px; color: var(--text-muted);">Simulate an incoming invoice message from BUSY</span>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 14px;">
+                            <div>
+                                <label style="font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">Recipient Mobile Number</label>
+                                <input type="text" id="testBusyMobile" placeholder="e.g. 9876543210 (or 919876543210)" style="font-family: 'Consolas', monospace;">
+                            </div>
+                            <div>
+                                <label style="font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">Message Text</label>
+                                <textarea id="testBusyMessage" rows="3" placeholder="Dear Customer, Thank you for your business. Your Invoice #INV-101 has been generated." style="font-family: inherit; font-size: 13px; line-height: 1.5; resize: vertical;"></textarea>
+                            </div>
+                            <button id="btnTestBusyApi" onclick="testBusyApiEndpoint()" class="primary" style="height: 44px; font-size: 13.5px; border-radius: 10px; justify-content: center; gap: 8px;">
+                                <span>🚀</span> Test Send from BUSY API
+                            </button>
+                            <div id="testBusyApiResult" style="display: none; padding: 12px; border-radius: 10px; font-size: 12.5px; font-family: 'Consolas', monospace; word-break: break-all;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Step-by-Step Setup Instructions -->
+                    <div class="glass-card" style="border: 1px solid var(--border-color);">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+                            <div style="width: 36px; height: 36px; border-radius: 10px; background: #ecfdf5; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                                📖
+                            </div>
+                            <div>
+                                <h3 style="margin: 0; font-size: 16px; font-weight: 700;">How to Configure in BUSY 21 / 18</h3>
+                                <span style="font-size: 12px; color: var(--text-muted);">Step-by-step setup in under 2 minutes</span>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 14px; font-size: 13px; line-height: 1.5;">
+                            <div style="display: flex; gap: 12px;">
+                                <div style="width: 26px; height: 26px; border-radius: 50%; background: #eff6ff; color: #2563eb; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">1</div>
+                                <div>
+                                    <strong>Open WhatsApp Configuration</strong><br>
+                                    In BUSY, click <code>Administration</code> &rarr; <code>Configuration</code> &rarr; <code>WhatsApp / SMS Configuration</code>.
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 12px;">
+                                <div style="width: 26px; height: 26px; border-radius: 50%; background: #eff6ff; color: #2563eb; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">2</div>
+                                <div>
+                                    <strong>Add or Edit Format</strong><br>
+                                    Click <strong>Add New Format</strong>, enter name as <code>WhatsApp</code>, and check <code>Send PDF link for Invoice</code>.
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 12px;">
+                                <div style="width: 26px; height: 26px; border-radius: 50%; background: #eff6ff; color: #2563eb; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">3</div>
+                                <div>
+                                    <strong>Paste the API URL & Parameters</strong><br>
+                                    Select <strong>Service Provider Server</strong>. Copy and paste the WhatsApp API URL into the box. Then in the table, set parameter names to <code>Mobile</code> and <code>Message</code>.
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 12px;">
+                                <div style="width: 26px; height: 26px; border-radius: 50%; background: #eff6ff; color: #2563eb; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">4</div>
+                                <div>
+                                    <strong>Configure Number Treatment & Save</strong><br>
+                                    Select <strong>Truncate with Prefix</strong> with Length <code>10</code> and Prefix <code>91</code>. Click <strong>Save</strong>. You are now ready to send WhatsApp invoices directly from BUSY!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script src="app.js"></script>

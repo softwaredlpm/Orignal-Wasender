@@ -1372,3 +1372,18 @@ input[type="file"]:hover::file-selector-button {
     transform: translateY(-1px);
     box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
 }
+
+/* BUSY API Config UI Enhancements */
+#busyapiconfig table tr:hover td {
+    background: #f8fafc;
+}
+#busyapiconfig .stat-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+#busyapiconfig .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+#busyapiconfig button {
+    transition: all 0.15s ease;
+}
