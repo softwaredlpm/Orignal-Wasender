@@ -1129,9 +1129,13 @@ function startClientSubServer(clientId) {
 
             busboy2.on('field', (name, val) => { fields[name] = val; });
             busboy2.on('file', (name, file, info) => {
-                const { filename } = info;
+                const filename = info?.filename || (typeof info === 'string' ? info : '');
+                if (!filename) {
+                    file.resume();
+                    return;
+                }
                 const uploadsDir = path.join(appDir, 'uploads');
-                if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
+                if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
                 let saveTo = path.join(uploadsDir, filename);
                 let counter = 1;
                 while (fs.existsSync(saveTo)) {
@@ -1614,9 +1618,9 @@ async function sendMessageJob(job) {
             const previousClient = readyClients[rotationClientIndex % readyClients.length];
             rotationClientIndex = (rotationClientIndex + 1) % readyClients.length;
             currentChunkSentCount = 0;
-            const newClient = readyClients[rotationClientIndex];
-            console.log(`🔀 [Mode B: SIM Rotation] Chunk of ${ROTATION_CHUNK_SIZE} msgs completed on [${previousClient.name}]. Rotating to [${newClient.name}]!`);
-            addLog("info", `[SIM Rotation] Rotated sending account from [${previousClient.name}] to [${newClient.name}].`);
+            const newClient = readyClients[rotationClientIndex % readyClients.length];
+            console.log(`🔀 [Mode B: SIM Rotation] Chunk of ${ROTATION_CHUNK_SIZE} msgs completed on [${previousClient?.name || 'Account'}]. Rotating to [${newClient?.name || 'Account'}]!`);
+            addLog("info", `[SIM Rotation] Rotated sending account from [${previousClient?.name || 'Account'}] to [${newClient?.name || 'Account'}].`);
         }
 
         clientInfo = readyClients[rotationClientIndex % readyClients.length];
@@ -1722,15 +1726,17 @@ async function sendMessageJob(job) {
             };
 
             // Prime contact and chat model in WhatsApp Web to ensure memoized getters have valid data
-            await clientInstance.pupPage.evaluate(async (jid) => {
-                try {
-                    const wid = window.require('WAWebWidFactory').createWid(jid);
-                    const contactColl = window.require('WAWebCollections').Contact;
-                    if (contactColl && !contactColl.get(wid)) {
-                        await contactColl.find(wid).catch(() => {});
-                    }
-                } catch (e) { }
-            }, targetChatId).catch(() => {});
+            if (clientInstance.pupPage && typeof clientInstance.pupPage.evaluate === 'function') {
+                await clientInstance.pupPage.evaluate(async (jid) => {
+                    try {
+                        const wid = window.require('WAWebWidFactory').createWid(jid);
+                        const contactColl = window.require('WAWebCollections').Contact;
+                        if (contactColl && !contactColl.get(wid)) {
+                            await contactColl.find(wid).catch(() => {});
+                        }
+                    } catch (e) { }
+                }, targetChatId).catch(() => {});
+            }
 
             let response;
             try {
@@ -1741,17 +1747,19 @@ async function sendMessageJob(job) {
                     console.warn(`⚠️ [Job: ${jobId}] Primary send encountered memoize/getter error (${errMsg}). Attempting safe retry for ${standardChatId}...`);
                     
                     // Warm up chat model in page context to ensure memoizer has initialized Wid/Chat
-                    await clientInstance.pupPage.evaluate(async (jid) => {
-                        try {
-                            const wid = window.require('WAWebWidFactory').createWid(jid);
-                            await window.require('WAWebQueryExistsJob').queryWidExists(wid).catch(() => {});
-                            const contactColl = window.require('WAWebCollections').Contact;
-                            if (contactColl && !contactColl.get(wid)) {
-                                await contactColl.find(wid).catch(() => {});
-                            }
-                            await window.require('WAWebFindChatAction').findOrCreateLatestChat(wid);
-                        } catch (e) { }
-                    }, standardChatId).catch(() => {});
+                    if (clientInstance.pupPage && typeof clientInstance.pupPage.evaluate === 'function') {
+                        await clientInstance.pupPage.evaluate(async (jid) => {
+                            try {
+                                const wid = window.require('WAWebWidFactory').createWid(jid);
+                                await window.require('WAWebQueryExistsJob').queryWidExists(wid).catch(() => {});
+                                const contactColl = window.require('WAWebCollections').Contact;
+                                if (contactColl && !contactColl.get(wid)) {
+                                    await contactColl.find(wid).catch(() => {});
+                                }
+                                await window.require('WAWebFindChatAction').findOrCreateLatestChat(wid);
+                            } catch (e) { }
+                        }, standardChatId).catch(() => {});
+                    }
 
                     await delay(1500);
                     response = await withTimeout(clientInstance.sendMessage(standardChatId, media, sendOptions), 45000);
@@ -3111,13 +3119,17 @@ app.post("/api/v1/bulk-upload", (req, res) => {
 
     busboy.on("field", (name, val) => (fields[name] = val));
     busboy.on("file", (name, file, info) => {
-        const { filename } = info;
+        const filename = info?.filename || (typeof info === 'string' ? info : '');
+        if (!filename) {
+            file.resume();
+            return;
+        }
         const uploadsDir = path.join(appDir, "uploads");
         if (!fs.existsSync(uploadsDir)) {
             fs.mkdirSync(uploadsDir, { recursive: true });
         }
 
-        const saveTo = path.join(uploadsDir, `bulk_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${filename}`);
+        const saveTo = path.join(uploadsDir, `bulk_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${path.basename(filename)}`);
 
         // Create a promise to ensure file is fully written before processing
         const filePromise = new Promise((resolve, reject) => {
@@ -3512,10 +3524,14 @@ app.all("/api/v1/send", (req, res) => {
             console.log(`📝 Received Field: [${name}] = [${val}]`);
         });
         busboy.on("file", (name, file, info) => {
-            const { filename } = info;
+            const filename = info?.filename || (typeof info === 'string' ? info : '');
+            if (!filename) {
+                file.resume();
+                return;
+            }
             console.log(`📁 Received File: [${name}] (${filename})`);
             const uploadsDir = path.join(appDir, "uploads");
-            if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
+            if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
             // Unique naming logic to preserve original filename for recipient
             let baseName = path.parse(filename).name;
@@ -3635,10 +3651,16 @@ app.post("/api/payment-config", (req, res) => {
     });
 
     busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
-        const saveTo = path.join(appDir, 'uploads', `qr_${Date.now()}_${filename.filename}`);
-        if (!fs.existsSync(path.join(appDir, 'uploads'))) {
-            fs.mkdirSync(path.join(appDir, 'uploads'));
+        const fname = typeof filename === 'object' && filename ? (filename.filename || '') : (filename || '');
+        if (!fname) {
+            file.resume();
+            return;
         }
+        const uploadsDir = path.join(appDir, 'uploads');
+        if (!fs.existsSync(uploadsDir)) {
+            fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+        const saveTo = path.join(uploadsDir, `qr_${Date.now()}_${path.basename(fname)}`);
         file.pipe(fs.createWriteStream(saveTo));
         qrCodePath = saveTo;
     });
@@ -3685,19 +3707,27 @@ app.post("/api/payment-config", (req, res) => {
 });
 
 setInterval(() => {
-    const uploadsDir = path.join(appDir, "uploads");
-    if (!fs.existsSync(uploadsDir)) return;
+    try {
+        const uploadsDir = path.join(appDir, "uploads");
+        if (!fs.existsSync(uploadsDir)) return;
 
-    const files = fs.readdirSync(uploadsDir);
-    files.forEach(file => {
-        const filePath = path.join(uploadsDir, file);
-        const stats = fs.statSync(filePath);
-        const ageHours = (Date.now() - stats.mtimeMs) / (1000 * 60 * 60);
-        if (ageHours > 24) {
-            fs.unlinkSync(filePath);
-            console.log(`🧹 Deleted old file: ${filePath}`);
-        }
-    });
+        const files = fs.readdirSync(uploadsDir);
+        files.forEach(file => {
+            try {
+                const filePath = path.join(uploadsDir, file);
+                const stats = fs.statSync(filePath);
+                const ageHours = (Date.now() - stats.mtimeMs) / (1000 * 60 * 60);
+                if (ageHours > 24) {
+                    fs.unlinkSync(filePath);
+                    console.log(`🧹 Deleted old file: ${filePath}`);
+                }
+            } catch (fileErr) {
+                // file may be locked by another process or already removed
+            }
+        });
+    } catch (err) {
+        console.error("Error during uploads directory cleanup:", err.message);
+    }
 }, 1000 * 60 * 60); // run every 1 hour
 
 // ======================

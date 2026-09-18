@@ -120,10 +120,20 @@ function runPsQuery(action, data = "", firm = null) {
             try {
                 const cleanOut = stdout.trim();
                 if (!cleanOut) return resolve([]);
-                const parsed = JSON.parse(cleanOut);
+                let parsed = JSON.parse(cleanOut);
 
                 // If the bridge returns a lone object or property (like RESOLVE_PATH), wrap it or handle it
-                if (action === 'RESOLVE_PATH' && parsed.path) return resolve(parsed.path);
+                if (action === 'RESOLVE_PATH' && parsed && parsed.path) return resolve(parsed.path);
+
+                // For list-returning actions, ensure PowerShell single-object flattening is normalized to an Array
+                const listActions = new Set([
+                    'GET_ACCOUNTS', 'GET_BALANCES_BULK', 'GET_CONTACT_BULK', 'GET_BILLS_BULK',
+                    'GET_CLOSING_STOCK', 'GET_BATCH_CLOSING_STOCK', 'GET_MATERIAL_CENTERS',
+                    'GET_PARTY_BY_PHONE', 'GET_PARTY_BY_NAME', 'GET_PDC_ALERTS'
+                ]);
+                if (listActions.has(action) && parsed && !Array.isArray(parsed)) {
+                    parsed = [parsed];
+                }
 
                 resolve(parsed);
             } catch (e) {
@@ -450,7 +460,7 @@ const BusyService = {
             let rowsHtml = "";
 
             // Sort items alphabetically by ItemName to match BUSY's official report order
-            const sortedItems = [...stockItems].sort((a, b) => a.ItemName.localeCompare(b.ItemName));
+            const sortedItems = [...stockItems].sort((a, b) => (a.ItemName || '').localeCompare(b.ItemName || ''));
 
             sortedItems.forEach(item => {
                 const rawQty = (item.RawQty !== undefined) ? item.RawQty : 0;
@@ -460,9 +470,10 @@ const BusyService = {
                 const prefix = rawQty < 0 ? "-" : "";
                 const formattedNum = numVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 const formattedQty = `${prefix}${formattedNum}`;
-                const unit = (item.Unit || (item.ItemName.toLowerCase().includes("popline") ? "Metre" : "Pcs.")).trim();
+                const itemNameStr = String(item.ItemName || '');
+                const unit = (item.Unit || (itemNameStr.toLowerCase().includes("popline") ? "Metre" : "Pcs.")).trim();
 
-                const itemName = item.BatchNo ? `${item.ItemName} (Batch: ${item.BatchNo})` : item.ItemName;
+                const itemName = item.BatchNo ? `${item.ItemName || ''} (Batch: ${item.BatchNo})` : (item.ItemName || '');
 
                 rowsHtml += `
                 <tr>
@@ -708,7 +719,8 @@ const BusyService = {
                     grandTotalOut += qtyOut;
                     grandTotalPending += pendingQty;
                     
-                    const unit = (item.Unit || (item.ItemName.toLowerCase().includes("popline") ? "Metre" : "Pcs.")).trim();
+                    const itemNameStr = String(item.ItemName || '');
+                    const unit = (item.Unit || (itemNameStr.toLowerCase().includes("popline") ? "Metre" : "Pcs.")).trim();
 
                     contentHtml += `
                     <tr>
@@ -1020,28 +1032,28 @@ const BusyService = {
                             <td>${b.Type}</td>
                             <td>
                                 ${b.No}
-                                ${b.isPDC && Math.abs(b.OrgAmt - b.BalAmt) > 1 ? `<br/><span style="font-size: 9px; color: #4b5563;">Org. Amt. ${b.OrgAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>` : ''}
+                                ${b.isPDC && Math.abs((b.OrgAmt || 0) - (b.BalAmt || 0)) > 1 ? `<br/><span style="font-size: 9px; color: #4b5563;">Org. Amt. ${Number(b.OrgAmt || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>` : ''}
                             </td>
-                            <td class="text-right">${b.RefAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                            <td class="text-right" style="font-weight: 700;">${Math.abs(b.BalAmt).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                            <td class="text-right" style="font-weight: 700; color: #4b5563;">${Math.abs(b.RunBal).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                            <td class="text-right" style="font-weight: 700;">${b.DueStatus}</td>
-                            <td class="text-right">${b.DueDate}</td>
-                            <td class="text-right">${b.Days}</td>
+                            <td class="text-right">${Number(b.RefAmt || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                            <td class="text-right" style="font-weight: 700;">${Math.abs(b.BalAmt || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                            <td class="text-right" style="font-weight: 700; color: #4b5563;">${Math.abs(b.RunBal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                            <td class="text-right" style="font-weight: 700;">${b.DueStatus || ''}</td>
+                            <td class="text-right">${b.DueDate || ''}</td>
+                            <td class="text-right">${b.Days || 0}</td>
                         </tr>
                     `).join('')}
                     <tr style="font-weight: 700; border-top: 2px solid #374151; page-break-inside: avoid;">
                         <td colspan="3" class="text-right" style="padding-top: 15px;">Grand Total</td>
-                        <td class="text-right" style="padding-top: 15px; border-bottom: 2px solid #374151;">${totalRef.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                        <td class="text-right" style="padding-top: 15px; border-bottom: 2px solid #374151;">${Math.abs(totalDue).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                        <td class="text-right" style="padding-top: 15px; border-bottom: 2px solid #374151;">${Number(totalRef || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                        <td class="text-right" style="padding-top: 15px; border-bottom: 2px solid #374151;">${Math.abs(totalDue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                         <td colspan="4"></td>
                     </tr>
                 </tbody>
             </table>
             
             <div style="margin-top: 40px; font-weight: 700; font-size: 14px; line-height: 1.8;">
-                <div>( On Acc. : &nbsp;&nbsp;${Math.abs(onAccountTotal).toLocaleString('en-IN', { minimumFractionDigits: 2 })} ${(onAccountTotal === 0) ? "" : (onAccountTotal < 0 ? 'Dr' : 'Cr')} )</div>
-                <div>( Ledger Bal. : &nbsp;&nbsp;${Math.abs(liveBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 })} ${balanceSide} &nbsp;&nbsp;)</div>
+                <div>( On Acc. : &nbsp;&nbsp;${Math.abs(onAccountTotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })} ${(onAccountTotal === 0) ? "" : ((onAccountTotal || 0) < 0 ? 'Dr' : 'Cr')} )</div>
+                <div>( Ledger Bal. : &nbsp;&nbsp;${Math.abs(liveBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })} ${balanceSide || ''} &nbsp;&nbsp;)</div>
             </div>
         </body>
         </html > `;
@@ -1074,24 +1086,28 @@ const BusyService = {
             }
         }
 
-        const browser = await puppeteer.launch(launchOptions);
-        const page = await browser.newPage();
-        await page.setContent(htmlContent);
-        await page.pdf({
-            path: outputPath,
-            format: 'A4',
-            printBackground: true,
-            displayHeaderFooter: true,
-            headerTemplate: '<div></div>',
-            footerTemplate: `
+        let browser = null;
+        try {
+            browser = await puppeteer.launch(launchOptions);
+            const page = await browser.newPage();
+            await page.setContent(htmlContent);
+            await page.pdf({
+                path: outputPath,
+                format: 'A4',
+                printBackground: true,
+                displayHeaderFooter: true,
+                headerTemplate: '<div></div>',
+                footerTemplate: `
     <div style="font-family: 'Inter', system-ui, sans-serif; font-size: 9px; color: #9ca3af; width: 100%; padding: 0 40px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f3f4f6;">
                     <div>This is a computer-generated statement and does not require a signature.</div>
                     <div>Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>
                 </div>`,
-            margin: { top: '40px', bottom: '60px', left: '40px', right: '40px' }
-        });
-        await browser.close();
-        return outputPath;
+                margin: { top: '40px', bottom: '60px', left: '40px', right: '40px' }
+            });
+            return outputPath;
+        } finally {
+            if (browser) await browser.close().catch(() => {});
+        }
     },
 
     // 6. Bulk Send Job
@@ -1171,38 +1187,34 @@ const BusyService = {
                 const liveBalance = Math.abs(totalBal);
                 let balanceSide = (totalBal === 0) ? "" : (totalBal < 0 ? 'Dr' : 'Cr');
 
-                const { bills, totalDue, totalRef, onAccountTotal } = this._formatBills(billsMap[acc.Code] || [], totalBal, firm, isCreditor);
-
-                // Only send if there are actual due bills or a non-zero ledger balance
+                const { bills, totalDue, totalRef, onAccountTotal } = this._formatBills(billsMap[acc.Code] || [], totalBal, firm, isCreditor);                // Only send if there are actual due bills or a non-zero ledger balance
                 if (totalDue !== 0 || liveBalance !== 0) {
-                    if (totalDue !== 0 || liveBalance !== 0) {
-                        const contact = contactMap[String(acc.Code)];
-                        const rawMob = contact ? (contact.Mobile || contact.Phone) : null;
-                        const validNumbers = this.parseMobileNumbers(rawMob);
+                    const contact = contactMap[String(acc.Code)];
+                    const rawMob = contact ? (contact.Mobile || contact.Phone) : null;
+                    const validNumbers = this.parseMobileNumbers(rawMob);
 
-                        if (validNumbers.length > 0) {
-                            const accountName = `${acc.Name}${pdcBal > 1 ? '*' : ''} `;
-                            const onAccountSide = (onAccountTotal === 0) ? "" : (onAccountTotal < 0 ? 'Dr' : 'Cr');
-                            const message = `Dear ${acc.Name}, \n\nYour outstanding balance with ${firm.name} is ₹${liveBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })} ${balanceSide}.\n${Math.abs(onAccountTotal) > 1 ? `(Including On Account: ₹${Math.abs(onAccountTotal).toLocaleString('en-IN', { minimumFractionDigits: 2 })} ${onAccountSide})\n` : ""}Please find the detailed statement attached.`;
+                    if (validNumbers.length > 0) {
+                        const accountName = `${acc.Name}${pdcBal > 1 ? '*' : ''} `;
+                        const onAccountSide = (onAccountTotal === 0) ? "" : (onAccountTotal < 0 ? 'Dr' : 'Cr');
+                        const message = `Dear ${acc.Name}, \n\nYour outstanding balance with ${firm.name} is ₹${Number(liveBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })} ${balanceSide}.\n${Math.abs(onAccountTotal || 0) > 1 ? `(Including On Account: ₹${Math.abs(onAccountTotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })} ${onAccountSide})\n` : ""}Please find the detailed statement attached.`;
 
-                            // Generate PDF once for the account
-                            const pdfPath = await this.generatePdf(accountName, contact ? contact.Address : "", bills, totalDue, totalRef, liveBalance, balanceSide, onAccountTotal, firm, isCreditor);
+                        // Generate PDF once for the account
+                        const pdfPath = await this.generatePdf(accountName, contact ? contact.Address : "", bills, totalDue, totalRef, liveBalance, balanceSide, onAccountTotal, firm, isCreditor);
 
-                            // Send to ALL valid numbers
-                            for (const mob of validNumbers) {
-                                await logCallback("queue_job", "Queuing...", { 
-                                    number: mob, 
-                                    message: message, 
-                                    filePath: pdfPath,
-                                    whatsappClientId: firm.whatsappClientId || "default"
-                                });
-                                sent++;
-                            }
+                        // Send to ALL valid numbers
+                        for (const mob of validNumbers) {
+                            await logCallback("queue_job", "Queuing...", { 
+                                number: mob, 
+                                message: message, 
+                                filePath: pdfPath,
+                                whatsappClientId: firm.whatsappClientId || "default"
+                            });
+                            sent++;
                         }
                     }
                 }
             }
-            logCallback("success", `[${firm.name}]processed.Queued: ${sent} `);
+            logCallback("success", `[${firm.name}] processed. Queued: ${sent}`);
         } catch (e) { logCallback("error", `[${firm.name}] bulk job failed: ` + e.message); }
     },
 

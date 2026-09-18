@@ -74,8 +74,10 @@ async function checkStatus() {
         updateStatusDisplay(clientsData, statusData);
         updateLicenseDisplay(statusData);
     } catch (error) {
-        document.getElementById('statusText').textContent = 'Server Offline';
-        document.getElementById('statusDot').className = 'status-dot error';
+        const sText = document.getElementById('statusText');
+        if (sText) sText.textContent = 'Server Offline';
+        const sDot = document.getElementById('statusDot');
+        if (sDot) sDot.className = 'status-dot error';
         const serverStatus = document.getElementById('serverStatusText');
         if (serverStatus) {
             serverStatus.textContent = 'Disconnected';

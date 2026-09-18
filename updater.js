@@ -501,6 +501,7 @@ class AppUpdater {
         const scriptContent = `@echo off
 timeout /t 2 /nobreak >nul
 echo [Auto-Updater] Releasing port 5000...
+taskkill /PID ${process.pid} /F 2>nul
 for /f "tokens=5" %%a in ('netstat -ano ^| findstr :5000') do taskkill /PID %%a /F 2>nul
 timeout /t 1 /nobreak >nul
 echo [Auto-Updater] Starting updated WA Sender...
