@@ -29,6 +29,8 @@ uploads/*
 dist/
 temp/
 temp_update/
+temp_update.zip
+restart_after_update.bat
 backup_pre_update/
 backup_previous_version/
 .installed_commit
