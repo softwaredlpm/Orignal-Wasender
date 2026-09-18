@@ -773,9 +773,19 @@ function getOrCreateClient(clientId, name = null) {
                         const media = MessageMedia.fromFilePath(pdfPath);
                         const pdfCaption = `📄 *Stock Status Report (PDF)*\n🏢 *${companyProfile?.Name || activeFirm.companyName || activeFirm.name}*\n👤 Hello *${partyName}*,\n📅 *As On:* ${new Date().toLocaleDateString('en-GB').replace(/\//g, '-')}`;
 
-                        await clientInstance.sendMessage(recipientChat, media, { caption: pdfCaption, sendMediaAsDocument: true });
+                        const targetSendChat = (recipientChat && !recipientChat.endsWith('@lid')) ? recipientChat : (senderNumber ? `${senderNumber}@c.us` : recipientChat);
+                        try {
+                            await clientInstance.sendMessage(targetSendChat, media, { caption: pdfCaption, sendMediaAsDocument: true });
+                            sentSuccessfully = true;
+                        } catch (primaryErr) {
+                            if (recipientChat !== targetSendChat) {
+                                await clientInstance.sendMessage(recipientChat, media, { caption: pdfCaption, sendMediaAsDocument: true });
+                                sentSuccessfully = true;
+                            } else {
+                                throw primaryErr;
+                            }
+                        }
                         addLog("success", `Sent Closing Stock PDF report to +${senderNumber} (${stockItems.length} items)`);
-                        sentSuccessfully = true;
                     } catch (sendErr) {
                         console.error("Failed sending Stock PDF media to recipient:", sendErr.message);
                         addLog("warning", `Failed sending PDF report to +${senderNumber}: ${sendErr.message}. Falling back to text report.`);
