@@ -215,7 +215,7 @@ class AppUpdater {
 
     async fetchDirectCommitFeed() {
         try {
-            const atomUrl = `https://github.com/${this.repo}/commits/${this.branch}.atom`;
+            const atomUrl = `https://github.com/${this.repo}/commits/${this.branch}.atom?_t=${Date.now()}`;
             const atomRes = await this.request(atomUrl, { 'Accept': 'application/atom+xml, text/xml, */*' });
             const match = atomRes.body.match(/<entry>[\s\S]*?<id>tag:github.com,2008:Grit::Commit\/([a-f0-9]+)<\/id>[\s\S]*?<title>([\s\S]*?)<\/title>[\s\S]*?<updated>(.*?)<\/updated>/);
             if (match) {
@@ -237,7 +237,7 @@ class AppUpdater {
 
     async fetchRemotePackageVersion() {
         try {
-            let rawPkgUrl = `https://raw.githubusercontent.com/${this.repo}/${this.branch}/package.json`;
+            let rawPkgUrl = `https://raw.githubusercontent.com/${this.repo}/${this.branch}/package.json?_t=${Date.now()}`;
             if (this.githubToken) {
                 rawPkgUrl = `https://api.github.com/repos/${this.repo}/contents/package.json?ref=${this.branch}`;
             }
