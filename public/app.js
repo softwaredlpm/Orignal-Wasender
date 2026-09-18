@@ -1950,6 +1950,15 @@ async function triggerUpdateFlow() {
 
     } catch (err) {
         console.error('Failed to trigger update:', err);
+        // If connection dropped, the server may already be restarting
+        if (err.message && err.message.toLowerCase().includes('fetch')) {
+            if (stepEl) stepEl.textContent = 'Reconnecting...';
+            if (modalMsg) modalMsg.textContent = 'Server is applying update and reloading. Please wait a moment...';
+            setTimeout(() => {
+                pollUpdateProgress();
+            }, 2000);
+            return;
+        }
         if (modalIcon) modalIcon.textContent = '❌';
         if (modalTitle) modalTitle.textContent = 'Update Failed';
         if (modalMsg) modalMsg.textContent = err.message || 'Could not start update process.';

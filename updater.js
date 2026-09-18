@@ -495,15 +495,17 @@ class AppUpdater {
     scheduleServerRestart() {
         console.log('[Updater] Scheduling detached server restart...');
         const restartScriptPath = path.join(this.appDir, 'restart_after_update.bat');
+        const nodeExe = process.execPath;
         const isPkg = Boolean(process.pkg);
-        const startCommand = isPkg ? `start "" "${process.execPath}"` : 'start "WA Sender Server" node server.js';
+        const startCommand = isPkg ? `start "" "${nodeExe}"` : `start "WA Sender Server" "${nodeExe}" server.js`;
 
         const scriptContent = `@echo off
-timeout /t 2 /nobreak >nul
+rem Sleep using ping because timeout fails in non-interactive background processes
+ping 127.0.0.1 -n 3 >nul
 echo [Auto-Updater] Releasing port 5000...
 taskkill /PID ${process.pid} /F 2>nul
 for /f "tokens=5" %%a in ('netstat -ano ^| findstr :5000') do taskkill /PID %%a /F 2>nul
-timeout /t 1 /nobreak >nul
+ping 127.0.0.1 -n 2 >nul
 echo [Auto-Updater] Starting updated WA Sender...
 cd /d "%~dp0"
 ${startCommand}
