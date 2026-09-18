@@ -45,6 +45,7 @@
   },
   "devDependencies": {
     "esbuild": "^0.27.2",
+    "javascript-obfuscator": "^5.7.0",
     "patch-package": "^8.0.1"
   }
 }

@@ -90,20 +90,7 @@ class AppUpdater {
         return '';
     }
 
-    reloadConfig() {
-        try {
-            const cfgPath = path.join(this.appDir, 'config.json');
-            if (fs.existsSync(cfgPath)) {
-                const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
-                if (cfg.github_repo) this.repo = cfg.github_repo;
-                if (cfg.github_branch) this.branch = cfg.github_branch;
-                if (cfg.github_token) this.githubToken = cfg.github_token;
-            }
-        } catch (e) { }
-    }
-
     getStatus() {
-        this.reloadConfig();
         this.status.currentVersion = this.getLocalVersion();
         this.status.installedCommit = this.getLocalCommit();
         return this.status;
@@ -269,7 +256,6 @@ class AppUpdater {
     }
 
     async checkForUpdates() {
-        this.reloadConfig();
         this.status.state = 'checking';
         this.status.message = 'Checking for updates...';
         this.status.error = null;
@@ -374,7 +360,6 @@ class AppUpdater {
     }
 
     async applyUpdate() {
-        this.reloadConfig();
         if (this.status.state === 'downloading' || this.status.state === 'applying') {
             throw new Error('Update is already in progress!');
         }
