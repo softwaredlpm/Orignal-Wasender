@@ -162,36 +162,6 @@ const recentRequests = new Map();
  * Validate Remote License (Google Sheet)
  */
 async function validateRemoteLicense() {
-    // Check if SaaS license URL is specified or available
-    const saasUrl = config.saas_license_url || "http://localhost:8000/api/v1/desktop/verify-license";
-    const licenseCode = config.license_code || config.license_email || "ONE-ERP-MASTER-2026";
-
-    try {
-        console.log(`🌍 Checking license with SaaS Cloud: ${saasUrl}...`);
-        const saasResponse = await axios.post(saasUrl, {
-            license_code: licenseCode,
-            machine_id: MACHINE_ID,
-            email: config.license_email
-        }, {
-            timeout: 5000,
-            httpsAgent: new https.Agent({ rejectUnauthorized: false })
-        });
-
-        if (saasResponse.data && saasResponse.data.valid) {
-            console.log("✅ SaaS Cloud license verified successfully!", saasResponse.data.plan);
-            return {
-                valid: true,
-                expirationDate: saasResponse.data.expires_at,
-                daysRemaining: 365,
-                email: config.license_email,
-                tier: saasResponse.data.plan || 'ERP Pro',
-                type: 'saas'
-            };
-        }
-    } catch (e) {
-        // SaaS server unreachable or offline, continue to fallback
-    }
-
     // Check if email is configured
     if (!config.license_email) {
         return {
