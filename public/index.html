@@ -284,30 +284,46 @@
 
         <!-- ACCOUNTS TAB -->
         <div id="accounts" class="tab-content">
-            <div class="header">
-                <h2>WhatsApp Accounts</h2>
+            <div class="header" style="margin-bottom: 24px;">
+                <h2>
+                    <span style="color: #2563eb;">📱</span> WhatsApp Accounts & Devices
+                </h2>
+                <div class="badge-status-pill" style="background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8;">
+                    <span>⚡</span> Multi-Instance Manager
+                </div>
             </div>
 
             <div class="grid-2" style="margin-top: 24px;">
                 <!-- Accounts List -->
                 <div class="glass-card">
-                    <h3>📁 Linked WhatsApp Connections</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>📁</span> Linked WhatsApp Connections
+                        </h3>
+                        <span class="badge-status-pill" style="background: #f8fafc; font-size: 11px; padding: 2px 8px;">Multi-Device</span>
+                    </div>
                     <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
-                        Manage multiple connected devices. You can route different firms to specific connections.
+                        Manage multiple connected WhatsApp devices. You can route different firms to specific connections.
                     </p>
-                    <div id="accountsList" style="display: flex; flex-direction: column; gap: 16px;">
+                    <div id="accountsList" style="display: flex; flex-direction: column; gap: 12px;">
                         <!-- Dynamically populated -->
                     </div>
 
-                    <div style="margin-top: 32px; border-top: 1px solid var(--border-color); padding-top: 24px;">
-                        <h3>➕ Add New Connection</h3>
+                    <div style="margin-top: 28px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                        <h3 style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                            <span>➕</span> Add New Connection
+                        </h3>
+                        <p style="color: var(--text-muted); font-size: 12px; margin-bottom: 12px;">
+                            Spawn an independent WhatsApp instance running on its own dedicated HTTP port.
+                        </p>
                         <form id="addAccountForm" style="margin-top: 12px;">
                             <div class="form-group">
                                 <label>Connection Name (e.g. Sales, Billing)</label>
                                 <input type="text" id="newAccountName" placeholder="Enter name..." required>
                             </div>
-                            <button type="submit" style="width: 100%; justify-content: center; margin-top: 10px;">Create
-                                Connection</button>
+                            <button type="submit" class="primary" style="width: 100%; justify-content: center; margin-top: 10px; font-weight: 700; padding: 10px 16px;">
+                                ➕ Create Connection
+                            </button>
                         </form>
                     </div>
                 </div>
@@ -315,28 +331,30 @@
                 <!-- Selected Account QR Section -->
                 <div class="glass-card" id="activeAccountSection">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <h3 id="activeAccountTitle" style="margin: 0;">Select an Account</h3>
+                        <h3 id="activeAccountTitle" style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>⚙️</span> Select an Account
+                        </h3>
                         <div id="renameAccountContainer" style="display: none; align-items: center; gap: 8px;">
                             <input type="text" id="renameAccountInput" placeholder="New name..." style="padding: 6px 12px; font-size: 13px; border-radius: 8px; border: 1px solid var(--border-color); width: 140px; margin-bottom: 0;" />
                             <button class="secondary" style="padding: 6px 12px; font-size: 12px; width: auto; margin-top: 0;" onclick="renameActiveAccount()">Rename</button>
                         </div>
                     </div>
                     <p id="activeAccountSub" style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
-                        Select an account from the list to view its QR code or link status.
+                        Select an account from the list to view its QR code, connection details, or management tools.
                     </p>
 
                     <!-- Tabs to choose linking method -->
                     <div id="linkingMethodTabs"
                         style="display:none; justify-content:center; gap:8px; margin-bottom:20px;">
                         <button id="tabQrLink" class="btn-pill"
-                            style="padding:6px 16px; font-size:12px; font-weight:600; background:var(--primary); color:white; border:none;"
+                            style="padding:8px 18px; font-size:12px; font-weight:700; background:var(--primary); color:white; border:none; box-shadow: 0 2px 6px rgba(37,99,235,0.25);"
                             onclick="switchLinkingMethod('qr')">
-                            Scan QR Code
+                            📷 Scan QR Code
                         </button>
                         <button id="tabPhoneLink" class="secondary btn-pill"
-                            style="padding:6px 16px; font-size:12px; font-weight:600; background:#f1f5f9; color:var(--text); border:none;"
+                            style="padding:8px 18px; font-size:12px; font-weight:700; background:#f1f5f9; color:var(--text); border:none;"
                             onclick="switchLinkingMethod('phone')">
-                            Link with Phone Number
+                            🔢 Link with Phone Number
                         </button>
                     </div>
 
@@ -345,7 +363,7 @@
                             Please scan this QR code with your WhatsApp app on your phone:
                         </p>
                         <img id="accountQrImage" src=""
-                            style="border: 1px solid var(--border-color); padding: 12px; border-radius: 16px; background: white; max-width: 250px; margin: 0 auto;" />
+                            style="border: 1px solid var(--border-color); padding: 12px; border-radius: 16px; background: white; max-width: 250px; margin: 0 auto; box-shadow: var(--shadow-sm);" />
                         <div id="accountQrCountdown"
                             style="color: var(--text-muted); font-size: 13px; margin-top: 16px; font-weight: 600;">
                         </div>
@@ -359,11 +377,11 @@
                                 Enter your WhatsApp phone number with country code (e.g. 919876543210) to generate a
                                 pairing code:
                             </p>
-                            <div style="display:flex; justify-content:center; gap:8px; max-width:320px; margin:0 auto;">
+                            <div style="display:flex; justify-content:center; gap:8px; max-width:340px; margin:0 auto;">
                                 <input type="text" id="linkPhoneNumber" placeholder="e.g. 919999999999"
-                                    style="padding:8px 12px; border-radius:8px; border:1px solid var(--border-color); width:100%; font-size:14px;" />
+                                    style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); width:100%; font-size:14px;" />
                                 <button id="btnRequestPairingCode" class="primary"
-                                    style="padding:8px 16px; white-space:nowrap; border-radius:8px; font-weight:600;"
+                                    style="padding:9px 16px; white-space:nowrap; border-radius:8px; font-weight:700;"
                                     onclick="requestPhonePairingCode()">
                                     Get Code
                                 </button>
@@ -385,15 +403,79 @@
                         </div>
                     </div>
 
-                    <div id="accountQrLinked" style="display:none; text-align:center; padding: 40px 0;">
-                        <div style="font-size: 64px; margin-bottom: 20px;">✅</div>
-                        <div style="font-weight: 800; color: var(--text); font-size: 24px; letter-spacing: -0.02em;"
-                            id="accountLinkedHeader">
-                            WhatsApp is Linked
+                    <!-- Grand Executive Linked Account Card -->
+                    <div id="accountQrLinked" style="display:none; padding: 24px 16px; text-align:center;">
+                        <div style="display:inline-flex; align-items:center; justify-content:center; width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); border: 2px solid #86efac; box-shadow: 0 10px 25px -5px rgba(34, 197, 94, 0.25); margin-bottom: 16px;">
+                            <span style="font-size: 36px;">✅</span>
                         </div>
-                        <p style="color: var(--text-muted); font-size: 15px; margin-top: 8px;">
-                            This connection is active and ready to deliver messages.
+                        <div style="font-weight: 800; color: var(--text); font-size: 22px; letter-spacing: -0.02em; margin-bottom: 4px;"
+                            id="accountLinkedHeader">
+                            Default Account is Linked
+                        </div>
+                        <p style="color: var(--text-muted); font-size: 13px; margin: 0 0 20px 0;">
+                            This WhatsApp connection is authenticated, active, and ready to deliver messages.
                         </p>
+
+                        <!-- Device Information Matrix -->
+                        <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px; padding: 16px 18px; margin-bottom: 22px; text-align: left;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;">
+                                <div>
+                                    <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px;">Connected Number</div>
+                                    <div id="accountLinkedPhone" style="font-size: 14px; font-weight: 700; color: var(--text); margin-top: 4px; display: flex; align-items: center; gap: 6px;">
+                                        <span>📱</span> <span id="accountLinkedPhoneVal">--</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px;">Service Port</div>
+                                    <div style="font-size: 14px; font-weight: 700; color: var(--primary); margin-top: 4px; display: flex; align-items: center; gap: 6px;">
+                                        <span>🔌</span> <span id="accountLinkedPortVal">:5000</span>
+                                        <span style="font-size: 10px; background: #eff6ff; color: #1d4ed8; padding: 2px 6px; border-radius: 6px; font-weight: 700; border: 1px solid #bfdbfe;">Active</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px;">Live Status</div>
+                                    <div style="font-size: 14px; font-weight: 700; color: var(--success); margin-top: 4px; display: flex; align-items: center; gap: 6px;">
+                                        <span class="status-dot success" style="width: 8px; height: 8px;"></span> Connected & Ready
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px;">API URL</div>
+                                    <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-top: 4px; font-family: monospace; display: flex; align-items: center; gap: 6px;">
+                                        <span id="accountLinkedApiUrl">/api/v1/send</span>
+                                        <button type="button" class="secondary btn-pill" style="padding: 2px 7px; font-size: 10px; cursor: pointer;" onclick="copyAccountEndpoint()">Copy</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Control Buttons -->
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+                            <button type="button" class="primary" style="padding: 9px 18px; font-size: 13px; font-weight: 700; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);" onclick="toggleAccountQuickTest()">
+                                <span>🚀</span> Send Test Message
+                            </button>
+                            <button type="button" class="secondary" style="padding: 9px 16px; font-size: 13px; font-weight: 600; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;" onclick="refreshActiveAccount()">
+                                <span>🔄</span> Refresh Status
+                            </button>
+                            <button type="button" class="btn-danger" style="padding: 9px 16px; font-size: 13px; font-weight: 600; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5;" onclick="clearAccountSession(activeClientId)">
+                                <span>🔴</span> Disconnect / Logout
+                            </button>
+                        </div>
+
+                        <!-- Collapsible Quick Test Messenger -->
+                        <div id="accountQuickTestBox" style="display: none; margin-top: 20px; text-align: left; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 16px 18px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <div style="font-weight: 700; font-size: 13px; color: #1e3a8a; display: flex; align-items: center; gap: 6px;">
+                                    <span>💬</span> Quick WhatsApp Delivery Test
+                                </div>
+                                <button type="button" class="secondary btn-pill" style="padding: 2px 8px; font-size: 11px;" onclick="toggleAccountQuickTest()">✕ Close</button>
+                            </div>
+                            <div style="display: grid; grid-template-columns: minmax(130px, 1fr) minmax(180px, 2fr) auto; gap: 8px; align-items: center;">
+                                <input type="text" id="quickTestMobile" placeholder="e.g. 919876543210" style="padding: 8px 10px; font-size: 13px; border-radius: 6px; border: 1px solid #cbd5e1; background: white; margin-bottom: 0;" />
+                                <input type="text" id="quickTestMessage" value="Hello! This is a test message from Wasender." style="padding: 8px 10px; font-size: 13px; border-radius: 6px; border: 1px solid #cbd5e1; background: white; margin-bottom: 0;" />
+                                <button type="button" class="primary" id="btnSendQuickTest" style="padding: 8px 14px; font-size: 13px; font-weight: 700; white-space: nowrap; margin-top: 0;" onclick="sendQuickTestMessage()">Send Test</button>
+                            </div>
+                            <div id="quickTestFeedback" style="font-size: 12px; margin-top: 8px; display: none; font-weight: 600;"></div>
+                        </div>
                     </div>
 
                     <div id="accountQrLoading"
@@ -1055,24 +1137,9 @@
                         One-click copy-paste API settings, parameter mappings, and treatment rules for <strong>BUSY 21 / 18 / 17</strong>.
                     </p>
                 </div>
-                <div class="busy-header-actions">
-                    <!-- View Mode Switcher -->
-                    <div class="busy-view-switcher">
-                        <button type="button" class="busy-view-btn active" id="btnBusyViewSplit" onclick="setBusyViewMode('split')" title="Side-by-side view with tester on right">
-                            <span>🗂️</span> Split View
-                        </button>
-                        <button type="button" class="busy-view-btn" id="btnBusyViewDetailed" onclick="setBusyViewMode('detailed')" title="Detailed 100% full width view for all monitors">
-                            <span>🖥️</span> Detailed Full Width
-                        </button>
-                    </div>
-
-                    <!-- Full Screen Theater Mode -->
-                    <button type="button" class="btn-busy-fs" onclick="toggleBusyFullscreen()" title="Fit monitor in full screen">
-                        <span>⛶</span> Full Screen
-                    </button>
-
+                <div style="display: flex; align-items: center; gap: 12px;">
                     <!-- Host Selector -->
-                    <div style="display: flex; align-items: center; background: #fff; padding: 6px 12px; border-radius: 11px; border: 1px solid var(--border-color); font-size: 13px; gap: 8px;">
+                    <div style="display: flex; align-items: center; background: #fff; padding: 6px 14px; border-radius: 12px; border: 1px solid var(--border-color); font-size: 13px; gap: 8px;">
                         <span style="color: var(--text-muted); font-weight: 500;">Host:</span>
                         <select id="busyHostSelector" onchange="updateBusyApiUrlDisplay()" style="border: none; background: transparent; font-size: 13px; font-weight: 700; color: var(--primary); outline: none; cursor: pointer;">
                             <option value="http://localhost:5000">localhost:5000 (Same PC)</option>
@@ -1148,12 +1215,7 @@
             <!-- Visual BUSY 21 Simulation & Step-by-Step Layout -->
             <div id="busyLayoutContainer" class="busy-layout-container view-split">
                 <!-- LEFT COLUMN: Authentic BUSY 21 Window Replica -->
-                <div id="busyWindowReplica" class="glass-card busy-window-replica" style="padding: 0; overflow: hidden; border: 2px solid #cbd5e1; box-shadow: var(--shadow-lg); position: relative;">
-                    <!-- Floating Exit Fullscreen Button -->
-                    <button type="button" class="busy-fs-close-floating" onclick="toggleBusyFullscreen()">
-                        ✕ Exit Full Screen (Esc)
-                    </button>
-
+                <div id="busyWindowReplica" class="glass-card busy-window-replica" style="padding: 0; overflow: hidden; border: 2px solid #cbd5e1; box-shadow: var(--shadow-lg);">
                     <!-- BUSY Window Title Bar -->
                     <div class="busy-win-header" style="background: linear-gradient(180deg, #1e40af 0%, #1e3a8a 100%); color: #ffffff; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; align-items: center; gap: 10px;">
@@ -1161,12 +1223,7 @@
                             <strong style="font-size: 14px;">WhatsApp/SMS Configuration</strong>
                             <span style="font-size: 12px; opacity: 0.85;">( Format Name - WhatsApp )</span>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <span style="background: #10b981; color: #fff; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px;">Visual Replica</span>
-                            <div class="busy-win-controls">
-                                <button type="button" class="busy-win-btn" onclick="toggleBusyFullscreen()" title="Maximize / Full Screen">⛶</button>
-                            </div>
-                        </div>
+                        <span style="background: #10b981; color: #fff; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px;">Visual Replica</span>
                     </div>
 
                     <!-- BUSY Window Body -->

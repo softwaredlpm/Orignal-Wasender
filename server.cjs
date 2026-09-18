@@ -1710,9 +1710,15 @@ app.get("/api/v1/status", async (req, res) => {
       licenseError
     });
   }
+  const resolvedNumber = clientInfo.number || (clientInfo.client && clientInfo.client.info && clientInfo.client.info.wid ? clientInfo.client.info.wid.user : null);
+  const resolvedPort = clientPorts.get(clientId) || (clientId === 'default' ? port : null);
+
   res.json({
     status: clientInfo.status,
     ready: clientInfo.isReady,
+    number: resolvedNumber,
+    name: clientInfo.name,
+    port: resolvedPort,
     pairingCode: clientInfo.pairingCode,
     licenseDays,
     licenseValid,
@@ -1792,13 +1798,15 @@ app.get("/api/v1/debug-screenshot", async (req, res) => {
 app.get("/api/v1/clients", (req, res) => {
   const list = [];
   for (const [clientId, info] of clients.entries()) {
+    const resolvedNumber = info.number || (info.client && info.client.info && info.client.info.wid ? info.client.info.wid.user : null);
+    const resolvedPort = clientPorts.get(clientId) || (clientId === 'default' ? port : null);
     list.push({
       id: clientId,
       name: info.name,
       status: info.status,
-      number: info.number,
+      number: resolvedNumber,
       ready: info.isReady,
-      port: clientPorts.get(clientId) || null,
+      port: resolvedPort,
       pairingCode: info.pairingCode
     });
   }

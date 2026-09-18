@@ -767,7 +767,7 @@ function initializeAccountsManager() {
     hydrateBusyClientDropdown();
 }
 
-async function fetchAndRenderAccounts() {
+async function fetchAndRenderAccounts(keepSelection = true) {
     try {
         const data = await robustFetch('/clients');
         if (!data.success) return;
@@ -780,15 +780,24 @@ async function fetchAndRenderAccounts() {
         data.clients.forEach(c => {
             const row = document.createElement('div');
             row.className = 'glass-card scan-row';
+            row.setAttribute('data-id', c.id);
             row.style.padding = '12px 16px';
             row.style.display = 'flex';
             row.style.justifyContent = 'space-between';
             row.style.alignItems = 'center';
             row.style.cursor = 'pointer';
             row.style.marginBottom = '8px';
+            row.style.borderRadius = '10px';
+            row.style.transition = 'all 0.2s ease';
+
             if (activeClientId === c.id) {
-                row.style.border = '1px solid var(--accent)';
-                row.style.background = 'rgba(139, 92, 246, 0.05)';
+                row.style.border = '2px solid var(--primary)';
+                row.style.background = '#eff6ff';
+                row.style.boxShadow = '0 2px 8px rgba(37, 99, 235, 0.12)';
+            } else {
+                row.style.border = '1px solid var(--border-color)';
+                row.style.background = 'white';
+                row.style.boxShadow = 'none';
             }
 
             row.addEventListener('click', (e) => {
@@ -800,27 +809,27 @@ async function fetchAndRenderAccounts() {
             const statusClass = c.status === 'ready' ? 'success' : (c.status === 'authenticating' ? 'warning' : 'error');
             const displayStatus = c.status === 'ready' ? 'Connected' : (c.status === 'authenticating' ? 'Connecting/Scan QR' : 'Disconnected');
             const displayNum = c.number ? ` (+${c.number})` : '';
-            const portBadge = c.port ? `<span style="margin-left:8px; background:#f0f4ff; color:#4f46e5; font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; font-family:monospace; border:1px solid #c7d2fe;">:${c.port}</span>` : '';
+            const portBadge = c.port ? `<span style="margin-left:6px; background:#eff6ff; color:#1d4ed8; font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; font-family:monospace; border:1px solid #bfdbfe;">:${c.port}</span>` : '';
 
             row.innerHTML = `
                 <div>
-                    <div style="font-weight: 700; font-size: 14px; display:flex; align-items:center; flex-wrap:wrap; gap:4px;">${c.name}${displayNum}${portBadge}</div>
+                    <div style="font-weight: 700; font-size: 14px; display:flex; align-items:center; flex-wrap:wrap; gap:4px; color:var(--text);">${c.name}${displayNum}${portBadge}</div>
                     <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; margin-top: 4px; color: var(--text-muted);">
                         <span class="status-dot ${statusClass}" style="width: 8px; height: 8px;"></span>
-                        ${displayStatus}
+                        <span class="status-text">${displayStatus}</span>
                     </div>
                 </div>
                 <div style="display: flex; gap: 8px;">
-                    <button class="secondary btn-pill" style="padding: 4px 10px; font-size: 11px;" onclick="selectActiveAccount('${c.id}', '${c.name}')">
+                    <button type="button" class="secondary btn-pill" style="padding: 5px 12px; font-size: 11px; font-weight: 700;" onclick="selectActiveAccount('${c.id}', '${c.name}')">
                         Manage
                     </button>
                     ${c.status === 'ready' ? `
-                        <button class="secondary btn-pill" style="padding: 4px 10px; font-size: 11px; color: var(--error);" onclick="clearAccountSession('${c.id}')">
+                        <button type="button" class="secondary btn-pill" style="padding: 5px 12px; font-size: 11px; font-weight: 700; color: #dc2626; border-color: #fca5a5; background: #fef2f2;" onclick="clearAccountSession('${c.id}')">
                             Logout
                         </button>
                     ` : ''}
                     ${c.id !== 'default' ? `
-                        <button class="btn-danger btn-pill" style="padding: 4px 10px; font-size: 11px;" onclick="deleteAccount('${c.id}', '${c.name}')">
+                        <button type="button" class="btn-danger btn-pill" style="padding: 5px 12px; font-size: 11px; font-weight: 700;" onclick="deleteAccount('${c.id}', '${c.name}')">
                             Delete
                         </button>
                     ` : ''}
@@ -843,14 +852,18 @@ async function selectActiveAccount(id, name) {
     
     // Highlight in list
     document.querySelectorAll('#accountsList .scan-row').forEach(row => {
-        row.style.border = 'none';
-        row.style.background = 'none';
+        if (row.getAttribute('data-id') === id) {
+            row.style.border = '2px solid var(--primary)';
+            row.style.background = '#eff6ff';
+            row.style.boxShadow = '0 2px 8px rgba(37, 99, 235, 0.12)';
+        } else {
+            row.style.border = '1px solid var(--border-color)';
+            row.style.background = 'white';
+            row.style.boxShadow = 'none';
+        }
     });
-    
-    // Quick refresh of elements to avoid redraw flicker
-    await fetchAndRenderAccounts();
 
-    document.getElementById('activeAccountTitle').textContent = `Manage: ${name}`;
+    document.getElementById('activeAccountTitle').innerHTML = `<span>⚙️</span> Manage: ${name}`;
     document.getElementById('activeAccountSub').textContent = `Account ID: ${id}`;
     
     // Show/Hide rename connection interface
@@ -866,6 +879,8 @@ async function selectActiveAccount(id, name) {
     document.getElementById('phoneLinkCodeArea').style.display = 'none';
     document.getElementById('phoneLinkInputArea').style.display = 'block';
     document.getElementById('linkPhoneNumber').value = '';
+    const quickTestBox = document.getElementById('accountQuickTestBox');
+    if (quickTestBox) quickTestBox.style.display = 'none';
     
     // Default linking method is QR
     window.currentLinkingMethod = 'qr';
@@ -890,7 +905,40 @@ async function pollActiveAccountStatus() {
             phoneContainer.style.display = 'none';
             methodTabs.style.display = 'none';
             qrLinked.style.display = 'block';
-            document.getElementById('accountLinkedHeader').textContent = `${activeClientId === 'default' ? 'Default Account' : 'WhatsApp'} is Linked`;
+
+            const accountName = statusData.name || (activeClientId === 'default' ? 'Default Account' : 'WhatsApp');
+            const headerEl = document.getElementById('accountLinkedHeader');
+            if (headerEl) {
+                headerEl.textContent = `${accountName} is Linked`;
+            }
+
+            const phoneValEl = document.getElementById('accountLinkedPhoneVal');
+            if (phoneValEl) {
+                phoneValEl.textContent = statusData.number ? `+${statusData.number}` : 'Connected (Active)';
+            }
+            const portValEl = document.getElementById('accountLinkedPortVal');
+            if (portValEl) {
+                portValEl.textContent = `:${statusData.port || 5000}`;
+            }
+            const apiEl = document.getElementById('accountLinkedApiUrl');
+            if (apiEl) {
+                const host = window.location.hostname || 'localhost';
+                const p = statusData.port || (activeClientId === 'default' ? 5000 : (window.location.port || 5000));
+                apiEl.textContent = `http://${host}:${p}/api/v1/send`;
+            }
+
+            // Synchronize the left list active row if it's currently showing connecting
+            const activeRow = document.querySelector(`#accountsList .scan-row[data-id="${activeClientId}"]`);
+            if (activeRow) {
+                const dot = activeRow.querySelector('.status-dot');
+                const text = activeRow.querySelector('.status-text');
+                if (dot && !dot.classList.contains('success')) {
+                    dot.className = 'status-dot success';
+                    if (text) text.textContent = 'Connected';
+                    // Re-fetch accounts to sync phone number in title and logout button
+                    fetchAndRenderAccounts(true);
+                }
+            }
         } else {
             qrLinked.style.display = 'none';
             methodTabs.style.display = 'flex';
@@ -923,6 +971,97 @@ async function pollActiveAccountStatus() {
     } catch (err) {
         console.error('Error polling active account status:', err);
     }
+}
+
+function toggleAccountQuickTest() {
+    const box = document.getElementById('accountQuickTestBox');
+    if (!box) return;
+    box.style.display = box.style.display === 'none' ? 'block' : 'none';
+    if (box.style.display === 'block') {
+        const inp = document.getElementById('quickTestMobile');
+        if (inp && !inp.value) inp.focus();
+    }
+}
+
+async function sendQuickTestMessage() {
+    const mobileInput = document.getElementById('quickTestMobile');
+    const msgInput = document.getElementById('quickTestMessage');
+    const feedback = document.getElementById('quickTestFeedback');
+    const btn = document.getElementById('btnSendQuickTest');
+
+    let mobile = (mobileInput ? mobileInput.value : '').trim().replace(/\D/g, '');
+    const message = (msgInput ? msgInput.value : '').trim() || 'Hello! This is a test message from Wasender.';
+
+    if (!mobile) {
+        showToast('Please enter a target mobile number (e.g. 919876543210)', 'warning');
+        if (mobileInput) mobileInput.focus();
+        return;
+    }
+    if (mobile.length === 10) {
+        mobile = '91' + mobile;
+        if (mobileInput) mobileInput.value = mobile;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+    if (feedback) {
+        feedback.style.display = 'block';
+        feedback.style.color = '#2563eb';
+        feedback.textContent = '⏳ Queuing test message...';
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('Mobile', mobile);
+        formData.append('Message', message);
+        formData.append('whatsappClientId', activeClientId || 'default');
+
+        const res = await robustFetch('/send', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (res.success) {
+            showToast('Test message queued successfully!', 'success');
+            if (feedback) {
+                feedback.style.color = 'var(--success)';
+                feedback.textContent = `✅ Delivered to queue for +${mobile}! Check dashboard logs.`;
+            }
+            checkQueue();
+        } else {
+            showToast('Error: ' + (res.error || res.message), 'error');
+            if (feedback) {
+                feedback.style.color = 'var(--error)';
+                feedback.textContent = `❌ Send failed: ${res.error || res.message}`;
+            }
+        }
+    } catch (err) {
+        showToast('Failed to queue test message', 'error');
+        if (feedback) {
+            feedback.style.color = 'var(--error)';
+            feedback.textContent = `❌ Network error: ${err.message}`;
+        }
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Send Test';
+    }
+}
+
+async function refreshActiveAccount() {
+    showToast('Refreshing connection status...', 'info');
+    await fetchAndRenderAccounts(true);
+    await pollActiveAccountStatus();
+}
+
+function copyAccountEndpoint() {
+    const apiEl = document.getElementById('accountLinkedApiUrl');
+    if (!apiEl) return;
+    const text = apiEl.textContent || apiEl.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        showToast('API URL copied to clipboard!', 'success');
+    }).catch(() => {
+        showToast('Copied: ' + text, 'info');
+    });
 }
 
 async function clearAccountSession(id) {
@@ -2001,64 +2140,4 @@ async function testBusyApiEndpoint() {
         }
     }
 }
-
-// ==========================================
-// BUSY API Config - View Switcher & Fullscreen
-// ==========================================
-
-function setBusyViewMode(mode) {
-    const container = document.getElementById('busyLayoutContainer');
-    const btnSplit = document.getElementById('btnBusyViewSplit');
-    const btnDetailed = document.getElementById('btnBusyViewDetailed');
-
-    if (!container) return;
-
-    if (mode === 'detailed') {
-        container.className = 'busy-layout-container view-detailed';
-        if (btnSplit) btnSplit.classList.remove('active');
-        if (btnDetailed) btnDetailed.classList.add('active');
-    } else {
-        container.className = 'busy-layout-container view-split';
-        if (btnSplit) btnSplit.classList.add('active');
-        if (btnDetailed) btnDetailed.classList.remove('active');
-    }
-
-    try {
-        localStorage.setItem('busy_config_view_mode', mode);
-    } catch (e) {}
-}
-
-function toggleBusyFullscreen() {
-    const replica = document.getElementById('busyWindowReplica');
-    if (!replica) return;
-
-    const isFs = replica.classList.toggle('is-fullscreen');
-    if (isFs) {
-        document.body.style.overflow = 'hidden';
-        showToast('Full Screen enabled (Press Esc to exit)', 'info');
-    } else {
-        document.body.style.overflow = '';
-    }
-}
-
-// Listen for Escape key to exit fullscreen
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        const replica = document.getElementById('busyWindowReplica');
-        if (replica && replica.classList.contains('is-fullscreen')) {
-            replica.classList.remove('is-fullscreen');
-            document.body.style.overflow = '';
-        }
-    }
-});
-
-// Restore user's preferred view mode on startup
-document.addEventListener('DOMContentLoaded', () => {
-    try {
-        const savedMode = localStorage.getItem('busy_config_view_mode');
-        if (savedMode) {
-            setBusyViewMode(savedMode);
-        }
-    } catch (e) {}
-});
 
