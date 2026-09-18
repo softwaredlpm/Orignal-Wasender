@@ -324,8 +324,8 @@ class AppUpdater {
             const isVersionNewer = this.compareVersions(remoteVersion, currentVersion) > 0;
             const installedCommit = this.getLocalCommit();
 
-            const isNewCommit = Boolean(latestCommitHash && installedCommit && latestCommitHash !== installedCommit);
-            const updateAvailable = isVersionNewer || (isNewCommit && !installedCommit.startsWith(latestCommitHash));
+            const isNewCommit = Boolean(latestCommitHash && (!installedCommit || !installedCommit.startsWith(latestCommitHash)));
+            const updateAvailable = isVersionNewer || isNewCommit;
 
             this.status.latestVersion = remoteVersion;
             this.status.commitHash = latestCommitHash;
