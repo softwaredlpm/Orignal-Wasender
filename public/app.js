@@ -1680,27 +1680,41 @@ async function checkSystemUpdate(isManual = false) {
             commitMsgEl.textContent = data.commitMessage;
         }
 
+        const feedbackEl = document.getElementById('updateCheckFeedback');
         if (data.updateAvailable) {
             if (performBtn) performBtn.style.display = 'inline-flex';
+            if (feedbackEl) {
+                feedbackEl.style.display = 'block';
+                feedbackEl.style.background = '#eff6ff';
+                feedbackEl.style.color = '#1d4ed8';
+                feedbackEl.style.border = '1px solid #bfdbfe';
+                feedbackEl.innerHTML = `🚀 <strong>Update Available: v${data.latestVersion || 'Latest'}</strong><br><span style="font-size: 11.5px; font-weight: 500;">${data.commitMessage || 'Click Update Now below to apply.'}</span>`;
+            }
             if (banner) {
                 banner.style.display = 'flex';
                 if (bannerTitle) bannerTitle.textContent = `New Update Available: v${data.latestVersion || 'Latest'}`;
                 if (bannerDesc) bannerDesc.textContent = data.commitMessage || 'A new version of WA Sender is ready to install.';
             }
-            if (isManual) {
-                alert(`Update Available!\n\nVersion: ${data.latestVersion || 'Latest'}\nChanges: ${data.commitMessage || 'Improvements & bugfixes'}\n\nClick 'Update Now' to apply.`);
-            }
         } else {
             if (performBtn) performBtn.style.display = 'none';
-            if (isManual) {
-                alert('Your system is up to date! (v' + (data.currentVersion || '1.0.0') + ')');
+            if (feedbackEl) {
+                feedbackEl.style.display = 'block';
+                feedbackEl.style.background = '#ecfdf5';
+                feedbackEl.style.color = '#059669';
+                feedbackEl.style.border = '1px solid #a7f3d0';
+                feedbackEl.innerHTML = `✅ <strong>Your system is fully up to date!</strong> (v${data.currentVersion || '1.0.0'})`;
             }
         }
     } catch (err) {
         console.error('Update check failed:', err);
         if (latestVerEl) latestVerEl.textContent = 'Check failed';
-        if (isManual) {
-            alert('Failed to check for updates: ' + (err.message || 'Network error'));
+        const feedbackEl = document.getElementById('updateCheckFeedback');
+        if (feedbackEl && isManual) {
+            feedbackEl.style.display = 'block';
+            feedbackEl.style.background = '#fef2f2';
+            feedbackEl.style.color = '#dc2626';
+            feedbackEl.style.border = '1px solid #fecaca';
+            feedbackEl.innerHTML = `❌ <strong>Check failed:</strong> ${err.message || 'Unable to reach update server'}`;
         }
     } finally {
         if (btn && isManual) {

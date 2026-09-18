@@ -403,71 +403,117 @@
 
         <!-- SETTINGS TAB -->
         <div id="settings" class="tab-content">
-            <div class="header">
-                <h2>Settings</h2>
-            </div>
-            <div class="glass-card" style="max-width: 500px;">
-                <h3>🔐 Remote License Configuration</h3>
-                <div class="form-group">
-                    <label>Registered Email</label>
-                    <input type="email" id="remoteEmail" placeholder="your@email.com">
+            <div class="header" style="margin-bottom: 24px;">
+                <h2>
+                    <span style="color: #6366f1;">⚙️</span> System Settings
+                </h2>
+                <div class="badge-status-pill" style="background: #e0e7ff; border-color: #c7d2fe; color: #4338ca;">
+                    <span>🛡️</span> Security & Updates
                 </div>
-                <div class="form-group"
-                    style="margin-top: 15px; padding: 15px; background: rgba(0,0,0,0.02); border-radius: 12px; border: 1px dashed var(--border-color);">
-                    <label
-                        style="color: var(--text-secondary); font-size: 11px; text-transform: uppercase; font-weight: 700;">💻
-                        Device Machine ID</label>
-                    <div style="display: flex; gap: 10px; align-items: center; margin-top: 8px;">
-                        <code id="machineIdDisplay"
-                            style="background: #fff; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); flex-grow: 1; font-family: monospace; font-size: 12px; color: var(--primary); overflow-x: auto; white-space: nowrap;">Loading...</code>
-                        <button type="button" onclick="copyMachineId()" class="secondary"
-                            style="padding: 10px 16px; font-size: 12px; margin: 0; white-space: nowrap; height: 38px;">Copy
-                            ID</button>
-                    </div>
-                    <small
-                        style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 10px; line-height: 1.4;">Authorize
-                        this specific machine in your Google Sheet by adding this ID next to your email.</small>
-                </div>
-                <button id="saveRemoteConfigBtn" style="width: 100%; justify-content: center;">Save
-                    Configuration</button>
             </div>
 
-            <!-- SYSTEM UPDATE CARD -->
-            <div class="glass-card" style="max-width: 500px; margin-top: 24px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                    <h3 style="margin: 0;">🚀 System Update</h3>
-                    <span id="updateBadgeStatus" class="badge" style="background: #eff6ff; color: var(--primary); font-size: 11px; padding: 4px 10px; border-radius: 12px; font-weight: 700;">v1.0.0</span>
-                </div>
-                <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.5; margin-bottom: 20px;">
-                    Check for the latest updates from GitHub. All customer settings, database links, and WhatsApp logins are safeguarded during updates.
-                </p>
-
-                <div style="background: rgba(0,0,0,0.02); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 10px;">
-                        <span style="color: var(--text-secondary);">Installed Version:</span>
-                        <strong id="displayCurrentVersion">1.0.0</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 10px;">
-                        <span style="color: var(--text-secondary);">Latest Remote Version:</span>
-                        <strong id="displayLatestVersion" style="color: var(--primary);">Checking...</strong>
-                    </div>
-                    <div id="displayCommitRow" style="display: none; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
-                        <span style="color: var(--text-muted);">Latest Changes:</span>
-                        <span id="displayCommitMsg" style="color: var(--text); font-weight: 500; text-align: right; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">-</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; font-size: 12px;">
-                        <span style="color: var(--text-muted);">Last Checked:</span>
-                        <span id="displayLastChecked" style="color: var(--text-muted);">Never</span>
+            <div class="busy-layout-wrap">
+                <!-- Info Banner Card -->
+                <div class="busy-hero-card" style="border-left: 5px solid #6366f1; padding: 22px 28px;">
+                    <div class="busy-hero-left">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 20px;">⚙️</span>
+                            <span style="font-weight: 700; font-size: 15px; color: var(--text);">System Configuration & License Management</span>
+                        </div>
+                        <p class="busy-hero-desc">
+                            Manage your remote license authorization, monitor hardware machine binding, and check for software updates seamlessly.
+                        </p>
                     </div>
                 </div>
 
-                <div style="display: flex; gap: 10px;">
-                    <button id="btnCheckUpdate" class="secondary" style="flex: 1; justify-content: center;" onclick="checkSystemUpdate(true)">
-                        🔄 Check for Updates
-                    </button>
-                    <button id="btnPerformUpdate" class="primary btn-update-pill" style="flex: 1; justify-content: center; display: none;" onclick="triggerUpdateFlow()">
-                        ⬆️ Update Now
-                    </button>
+                <!-- Two-Column Grid: License Configuration + System Update -->
+                <div class="grid-2" style="align-items: stretch; gap: 24px;">
+                    <!-- LEFT COLUMN: Remote License Configuration -->
+                    <div class="config-subcard" style="background: #ffffff; padding: 26px; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border-color);">
+                                <div style="width: 38px; height: 38px; border-radius: 10px; background: #fef3c7; display: flex; align-items: center; justify-content: center; font-size: 18px;">🔐</div>
+                                <div>
+                                    <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text);">Remote License Configuration</h4>
+                                    <span style="font-size: 12px; color: var(--text-muted);">Manage your registered account & hardware binding</span>
+                                </div>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label style="font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">Registered Email</label>
+                                <input type="email" id="remoteEmail" placeholder="your@email.com">
+                            </div>
+
+                            <div style="padding: 16px; background: #f8fafc; border-radius: 14px; border: 1.5px dashed var(--border-color); margin-bottom: 16px;">
+                                <label style="color: var(--text-secondary); font-size: 11.5px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px;">
+                                    <span>💻</span> Device Machine ID
+                                </label>
+                                <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
+                                    <code id="machineIdDisplay" style="background: #ffffff; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border-color); flex-grow: 1; font-family: monospace; font-size: 12px; color: var(--primary); overflow-x: auto; white-space: nowrap;">Loading...</code>
+                                    <button type="button" onclick="copyMachineId()" class="secondary" style="padding: 10px 16px; font-size: 12.5px; font-weight: 600; border-radius: 10px; white-space: nowrap; height: 42px;">
+                                        Copy ID
+                                    </button>
+                                </div>
+                                <small style="color: var(--text-muted); font-size: 11.5px; display: block; margin-top: 10px; line-height: 1.4;">
+                                    Authorize this specific machine in your Google Sheet by adding this ID next to your registered email.
+                                </small>
+                            </div>
+                        </div>
+
+                        <button id="saveRemoteConfigBtn" class="btn-save-plan" style="margin-top: 16px; width: 100%; justify-content: center;">
+                            <span>💾</span> Save Configuration
+                        </button>
+                    </div>
+
+                    <!-- RIGHT COLUMN: System Update -->
+                    <div class="config-subcard" style="background: #ffffff; padding: 26px; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border-color);">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div style="width: 38px; height: 38px; border-radius: 10px; background: #eff6ff; display: flex; align-items: center; justify-content: center; font-size: 18px;">🚀</div>
+                                    <div>
+                                        <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text);">System Update</h4>
+                                        <span style="font-size: 12px; color: var(--text-muted);">OTA Software Auto-Updater</span>
+                                    </div>
+                                </div>
+                                <span id="updateBadgeStatus" class="badge" style="background: #eff6ff; color: var(--primary); font-size: 11px; padding: 5px 12px; border-radius: 12px; font-weight: 700;">v1.0.0</span>
+                            </div>
+
+                            <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.5; margin-bottom: 18px;">
+                                Check for the latest updates from GitHub. All customer settings, database links, and WhatsApp logins are safeguarded during updates.
+                            </p>
+
+                            <div style="background: #f8fafc; padding: 18px; border-radius: 14px; border: 1px solid var(--border-color); margin-bottom: 16px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed var(--border-color);">
+                                    <span style="color: var(--text-secondary); font-weight: 500;">Installed Version:</span>
+                                    <strong id="displayCurrentVersion" style="color: var(--text);">1.0.0</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed var(--border-color);">
+                                    <span style="color: var(--text-secondary); font-weight: 500;">Latest Remote Version:</span>
+                                    <strong id="displayLatestVersion" style="color: var(--primary);">Checking...</strong>
+                                </div>
+                                <div id="displayCommitRow" style="display: none; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
+                                    <span style="color: var(--text-muted);">Latest Changes:</span>
+                                    <span id="displayCommitMsg" style="color: var(--text); font-weight: 500; text-align: right; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">-</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
+                                    <span style="color: var(--text-muted);">Last Checked:</span>
+                                    <span id="displayLastChecked" style="color: var(--text-muted); font-weight: 600;">Never</span>
+                                </div>
+                            </div>
+
+                            <div id="updateCheckFeedback" style="display: none; padding: 10px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; text-align: center; margin-bottom: 16px;"></div>
+                        </div>
+
+                        <div style="display: flex; gap: 12px; margin-top: 16px;">
+                            <button id="btnCheckUpdate" class="secondary" style="flex: 1; justify-content: center; height: 46px; border-radius: 12px; font-size: 13.5px;" onclick="checkSystemUpdate(true)">
+                                🔄 Check for Updates
+                            </button>
+                            <button id="btnPerformUpdate" class="primary btn-update-pill" style="flex: 1; justify-content: center; display: none; height: 46px; border-radius: 12px; font-size: 13.5px;" onclick="triggerUpdateFlow()">
+                                ⬆️ Update Now
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
