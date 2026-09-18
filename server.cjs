@@ -1626,6 +1626,17 @@ async function sendMessageJob(job) {
         sendMediaAsDocument: sendAsDocument
       };
 
+      // Prime contact and chat model in WhatsApp Web to ensure memoized getters have valid data
+      await clientInstance.pupPage.evaluate(async (jid) => {
+        try {
+          const wid = window.require('WAWebWidFactory').createWid(jid);
+          const contactColl = window.require('WAWebCollections').Contact;
+          if (contactColl && !contactColl.get(wid)) {
+            await contactColl.find(wid).catch(() => {});
+          }
+        } catch (e) { }
+      }, targetChatId).catch(() => {});
+
       let response;
       try {
         response = await withTimeout(clientInstance.sendMessage(targetChatId, media, sendOptions), 45e3);
@@ -1637,11 +1648,16 @@ async function sendMessageJob(job) {
           await clientInstance.pupPage.evaluate(async (jid) => {
             try {
               const wid = window.require('WAWebWidFactory').createWid(jid);
+              await window.require('WAWebQueryExistsJob').queryWidExists(wid).catch(() => {});
+              const contactColl = window.require('WAWebCollections').Contact;
+              if (contactColl && !contactColl.get(wid)) {
+                await contactColl.find(wid).catch(() => {});
+              }
               await window.require('WAWebFindChatAction').findOrCreateLatestChat(wid);
             } catch (e) { }
           }, standardChatId).catch(() => {});
 
-          await delay(1200);
+          await delay(1500);
           response = await withTimeout(clientInstance.sendMessage(standardChatId, media, sendOptions), 45e3);
         } else {
           throw mediaSendErr;
