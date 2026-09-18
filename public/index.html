@@ -1,0 +1,1863 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WA Sender</title>
+    <!-- Dependencies -->
+    <link rel="icon" type="image/png" href="icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+
+            70% {
+                transform: scale(1.1);
+                opacity: 0.8;
+                box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+
+        .scan-row {
+            transition: all 0.2s ease;
+            border-radius: 12px;
+        }
+
+        .scan-row:hover {
+            background: rgba(255, 255, 255, 0.04);
+            transform: scale(1.005);
+        }
+
+        #scanTableWrapper::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #scanTableWrapper::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <button id="mobileMenuBtn" class="mobile-menu-btn">☰</button>
+        <div class="mobile-brand">
+            <img src="logo.png" alt="WA Sender" style="height: 36px; width: auto; object-fit: contain;">
+        </div>
+        <div style="width: 40px;"></div> <!-- visual spacer -->
+    </div>
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="brand" style="margin-bottom: 32px; display: flex; justify-content: center;">
+            <img src="logo.png" alt="WA Sender"
+                style="height: 90px; width: auto; max-width: 100%; object-fit: contain;">
+        </div>
+
+        <nav>
+            <a href="#" class="nav-link active" data-tab="dashboard">
+                <span>📊</span> Dashboard
+            </a>
+            <a href="#" class="nav-link" data-tab="send">
+                <span>✉️</span> Send Message
+            </a>
+            <a href="#" class="nav-link" data-tab="queue">
+                <span>🔄</span> Queue
+            </a>
+            <a href="#" class="nav-link" data-tab="logs">
+                <span>📜</span> System Logs
+            </a>
+            <a href="#" class="nav-link" data-tab="accounts">
+                <span>📱</span> WhatsApp Accounts
+            </a>
+            <a href="#" class="nav-link" data-tab="settings">
+                <span>⚙️</span> Settings
+            </a>
+            <div style="margin: 10px 0; border-top: 1px solid var(--border-color);"></div>
+            <a href="#" class="nav-link" data-tab="busy" style="color: #10b981; display: none;">
+                <span>⚡</span> Busy Automator
+            </a>
+            <a href="#" class="nav-link" data-tab="batchstock" style="display: none;">
+                <span>📦</span> Batch Stock
+            </a>
+            <a href="#" class="nav-link" data-tab="paymentconfig">
+                <span>🏦</span> Payment Config
+            </a>
+        </nav>
+
+        <div style="margin-top: auto; padding-top: 20px;">
+            <div class="stat-card" style="padding: 16px; border-radius: 12px; margin-bottom: 12px;">
+                <div class="label" style="font-size: 10px;">License Status</div>
+                <div id="licenseDays" style="font-weight: 700; color: var(--success); font-size: 13px;">Loading...</div>
+            </div>
+            <button id="clearSessionBtn" class="secondary"
+                style="width: 100%; border-radius: 10px; font-size: 13px; justify-content: center;">
+                Logout / Reset
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main-content">
+
+        <!-- DASHBOARD TAB -->
+        <div id="dashboard" class="tab-content active">
+            <div class="header">
+                <h2>Dashboard</h2>
+                <div class="status-badge">
+                    <div id="statusDot" class="status-dot"></div>
+                    <span id="statusText">Checking...</span>
+                </div>
+            </div>
+
+            <!-- Update Available Notification Banner -->
+            <div id="updateBanner" class="update-banner" style="display: none;">
+                <div class="update-banner-content">
+                    <div class="update-badge-pulse">🚀</div>
+                    <div class="update-text">
+                        <strong id="updateBannerTitle">New Update Available!</strong>
+                        <span id="updateBannerDesc">A new version of WA Sender is ready to install.</span>
+                    </div>
+                </div>
+                <div class="update-banner-actions">
+                    <button id="btnQuickUpdate" class="btn-update-pill" onclick="triggerUpdateFlow()">Update Now</button>
+                    <button id="btnDismissUpdate" class="btn-icon-dismiss" onclick="dismissUpdateBanner()" title="Dismiss">✕</button>
+                </div>
+            </div>
+
+            <p style="color: var(--text-muted); font-weight: 500; font-size: 15px; margin-bottom: 32px;">Welcome back,
+                Admin</p>
+
+            <!-- Top Stats Grid -->
+            <div class="grid-top-stats">
+                <div class="stat-card">
+                    <div class="label">Pending Messages</div>
+                    <div id="queueCount" class="value">0</div>
+                    <div class="subtext">In current queue</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Server Status</div>
+                    <div id="serverStatusText" class="value" style="font-size: 20px; margin-top: 8px;">Online</div>
+                    <div class="subtext">Protected & Secure</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Quick Action</div>
+                    <div style="margin-top: 8px;">
+                        <button class="secondary btn-pill" onclick="document.querySelector('[data-tab=send]').click()">
+                            <span>✉️</span> New Message
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Connection Card (Multi-Account Overview) -->
+            <div class="glass-card" style="margin-top: 32px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h3 style="margin-bottom:0;">WhatsApp Accounts Status</h3>
+                    <button class="secondary btn-pill" onclick="document.querySelector('[data-tab=accounts]').click()"
+                        style="font-size: 12px; padding: 6px 12px;">
+                        ⚙️ Manage Connections
+                    </button>
+                </div>
+
+                <div id="dashboardAccountsList">
+                    <div style="color: var(--text-secondary); text-align:center; padding: 20px 0; font-weight: 500;">
+                        ⏳ Loading account status...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SEND TAB -->
+        <div id="send" class="tab-content">
+            <div class="header">
+                <h2>Send Message</h2>
+            </div>
+            <div class="grid-2">
+                <div class="glass-card" style="max-width: 800px;">
+                    <h3><span>📱</span> Direct Message</h3>
+                    <form id="sendForm">
+                        <div class="form-group">
+                            <label>Mobile Number</label>
+                            <input type="text" id="targetNumber" placeholder="e.g., 919876543210" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Message Content</label>
+                            <textarea id="message" rows="5" placeholder="Type your message here..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Attachment (Optional)</label>
+                            <input type="file" id="fileUpload">
+                        </div>
+                        <div class="form-group">
+                            <label>Send via WhatsApp Account</label>
+                            <select id="sendClientId"
+                                style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text);">
+                                <option value="default">Default Account</option>
+                            </select>
+                        </div>
+                        <button type="submit" id="sendButton"
+                            style="width: 100%; justify-content: center; margin-top: 10px;">Send Message</button>
+                    </form>
+                </div>
+
+                <div class="glass-card">
+                    <div
+                        style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 24px;">
+                        <h3 style="margin-bottom:0;"><span>📊</span> Bulk Upload</h3>
+                        <a href="#" id="downloadSampleBtn"
+                            style="font-size: 13px; color: var(--primary); font-weight: 600; text-decoration: none; background: #eff6ff; padding: 6px 12px; border-radius: 8px;">📥
+                            Template</a>
+                    </div>
+                    <form id="bulkForm">
+                        <div class="form-group">
+                            <label>Excel File (.xlsx)</label>
+                            <input type="file" id="excelFile" accept=".xlsx">
+                        </div>
+                        <div class="form-group">
+                            <label>Common Message</label>
+                            <textarea id="bulkMessage" rows="3"
+                                placeholder="Optional: Message template for all rows..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Common Attachment</label>
+                            <input type="file" id="bulkAttachment">
+                        </div>
+                        <div class="form-group">
+                            <label>Send via WhatsApp Account</label>
+                            <select id="bulkClientId"
+                                style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text);">
+                                <option value="default">Default Account</option>
+                            </select>
+                        </div>
+                        <button type="submit" id="bulkSendButton" class="secondary"
+                            style="width: 100%; justify-content: center; margin-top: 10px; background: #eff6ff; color: var(--primary); border: none;">🚀
+                            Start Bulk Sender</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- QUEUE TAB -->
+        <div id="queue" class="tab-content">
+            <div class="header">
+                <h2>Message Queue</h2>
+                <div style="display:flex; gap:12px;">
+                    <button id="retryAllBtn" style="background: var(--accent); white-space: nowrap;">🔄 Retry
+                        Failed</button>
+                    <button id="toggleQueueBtn" class="secondary">Pause Queue</button>
+                    <button id="clearQueueBtn" class="secondary" style="color: var(--error);">Clear Queue</button>
+                </div>
+            </div>
+            <div class="queue-list" id="queueList" style="margin-top: 24px;">
+                <!-- Items -->
+            </div>
+        </div>
+
+        <!-- LOGS TAB -->
+        <div id="logs" class="tab-content">
+            <div class="header">
+                <h2>System Logs</h2>
+                <button id="clearLogsBtn" class="secondary">🗑️ Clear Logs</button>
+            </div>
+            <div id="logsOutput" style="margin-top: 24px;"></div>
+        </div>
+
+        <!-- ACCOUNTS TAB -->
+        <div id="accounts" class="tab-content">
+            <div class="header">
+                <h2>WhatsApp Accounts</h2>
+            </div>
+
+            <div class="grid-2" style="margin-top: 24px;">
+                <!-- Accounts List -->
+                <div class="glass-card">
+                    <h3>📁 Linked WhatsApp Connections</h3>
+                    <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
+                        Manage multiple connected devices. You can route different firms to specific connections.
+                    </p>
+                    <div id="accountsList" style="display: flex; flex-direction: column; gap: 16px;">
+                        <!-- Dynamically populated -->
+                    </div>
+
+                    <div style="margin-top: 32px; border-top: 1px solid var(--border-color); padding-top: 24px;">
+                        <h3>➕ Add New Connection</h3>
+                        <form id="addAccountForm" style="margin-top: 12px;">
+                            <div class="form-group">
+                                <label>Connection Name (e.g. Sales, Billing)</label>
+                                <input type="text" id="newAccountName" placeholder="Enter name..." required>
+                            </div>
+                            <button type="submit" style="width: 100%; justify-content: center; margin-top: 10px;">Create
+                                Connection</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Selected Account QR Section -->
+                <div class="glass-card" id="activeAccountSection">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h3 id="activeAccountTitle" style="margin: 0;">Select an Account</h3>
+                        <div id="renameAccountContainer" style="display: none; align-items: center; gap: 8px;">
+                            <input type="text" id="renameAccountInput" placeholder="New name..." style="padding: 6px 12px; font-size: 13px; border-radius: 8px; border: 1px solid var(--border-color); width: 140px; margin-bottom: 0;" />
+                            <button class="secondary" style="padding: 6px 12px; font-size: 12px; width: auto; margin-top: 0;" onclick="renameActiveAccount()">Rename</button>
+                        </div>
+                    </div>
+                    <p id="activeAccountSub" style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
+                        Select an account from the list to view its QR code or link status.
+                    </p>
+
+                    <!-- Tabs to choose linking method -->
+                    <div id="linkingMethodTabs"
+                        style="display:none; justify-content:center; gap:8px; margin-bottom:20px;">
+                        <button id="tabQrLink" class="btn-pill"
+                            style="padding:6px 16px; font-size:12px; font-weight:600; background:var(--primary); color:white; border:none;"
+                            onclick="switchLinkingMethod('qr')">
+                            Scan QR Code
+                        </button>
+                        <button id="tabPhoneLink" class="secondary btn-pill"
+                            style="padding:6px 16px; font-size:12px; font-weight:600; background:#f1f5f9; color:var(--text); border:none;"
+                            onclick="switchLinkingMethod('phone')">
+                            Link with Phone Number
+                        </button>
+                    </div>
+
+                    <div id="accountQrContainer" style="display:none; text-align:center; padding: 20px 0;">
+                        <p style="color: var(--text-secondary); margin-bottom: 20px; font-weight: 500;">
+                            Please scan this QR code with your WhatsApp app on your phone:
+                        </p>
+                        <img id="accountQrImage" src=""
+                            style="border: 1px solid var(--border-color); padding: 12px; border-radius: 16px; background: white; max-width: 250px; margin: 0 auto;" />
+                        <div id="accountQrCountdown"
+                            style="color: var(--text-muted); font-size: 13px; margin-top: 16px; font-weight: 600;">
+                        </div>
+                    </div>
+
+                    <!-- Phone Link Container -->
+                    <div id="accountPhoneLinkContainer" style="display:none; text-align:center; padding:15px 0;">
+                        <div id="phoneLinkInputArea">
+                            <p
+                                style="color:var(--text-secondary); margin-bottom:15px; font-size:13px; font-weight:500;">
+                                Enter your WhatsApp phone number with country code (e.g. 919876543210) to generate a
+                                pairing code:
+                            </p>
+                            <div style="display:flex; justify-content:center; gap:8px; max-width:320px; margin:0 auto;">
+                                <input type="text" id="linkPhoneNumber" placeholder="e.g. 919999999999"
+                                    style="padding:8px 12px; border-radius:8px; border:1px solid var(--border-color); width:100%; font-size:14px;" />
+                                <button id="btnRequestPairingCode" class="primary"
+                                    style="padding:8px 16px; white-space:nowrap; border-radius:8px; font-weight:600;"
+                                    onclick="requestPhonePairingCode()">
+                                    Get Code
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="phoneLinkCodeArea" style="display:none; margin-top:20px;">
+                            <p style="color:var(--text-secondary); margin-bottom:12px; font-weight:600;">
+                                Enter this code on your WhatsApp app:
+                            </p>
+                            <div id="pairingCodeDisplay"
+                                style="font-size:28px; font-weight:800; letter-spacing:4px; color:var(--primary); background:#eff6ff; border:2px dashed #bfdbfe; padding:12px 24px; border-radius:12px; display:inline-block; font-family:monospace;">
+                                ---- ----
+                            </div>
+                            <p style="color:var(--text-muted); font-size:12px; margin-top:12px; line-height:1.4;">
+                                Open WhatsApp on your phone -> Menu / Settings -> Linked Devices -> Link with Phone
+                                Number.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div id="accountQrLinked" style="display:none; text-align:center; padding: 40px 0;">
+                        <div style="font-size: 64px; margin-bottom: 20px;">✅</div>
+                        <div style="font-weight: 800; color: var(--text); font-size: 24px; letter-spacing: -0.02em;"
+                            id="accountLinkedHeader">
+                            WhatsApp is Linked
+                        </div>
+                        <p style="color: var(--text-muted); font-size: 15px; margin-top: 8px;">
+                            This connection is active and ready to deliver messages.
+                        </p>
+                    </div>
+
+                    <div id="accountQrLoading"
+                        style="display:none; text-align:center; padding: 40px 0; color: var(--text-secondary); font-weight: 500;">
+                        ⏳ Initializing WhatsApp instance, please wait...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SETTINGS TAB -->
+        <div id="settings" class="tab-content">
+            <div class="header">
+                <h2>Settings</h2>
+            </div>
+            <div class="glass-card" style="max-width: 500px;">
+                <h3>🔐 Remote License Configuration</h3>
+                <div class="form-group">
+                    <label>Registered Email</label>
+                    <input type="email" id="remoteEmail" placeholder="your@email.com">
+                </div>
+                <div class="form-group"
+                    style="margin-top: 15px; padding: 15px; background: rgba(0,0,0,0.02); border-radius: 12px; border: 1px dashed var(--border-color);">
+                    <label
+                        style="color: var(--text-secondary); font-size: 11px; text-transform: uppercase; font-weight: 700;">💻
+                        Device Machine ID</label>
+                    <div style="display: flex; gap: 10px; align-items: center; margin-top: 8px;">
+                        <code id="machineIdDisplay"
+                            style="background: #fff; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); flex-grow: 1; font-family: monospace; font-size: 12px; color: var(--primary); overflow-x: auto; white-space: nowrap;">Loading...</code>
+                        <button type="button" onclick="copyMachineId()" class="secondary"
+                            style="padding: 10px 16px; font-size: 12px; margin: 0; white-space: nowrap; height: 38px;">Copy
+                            ID</button>
+                    </div>
+                    <small
+                        style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 10px; line-height: 1.4;">Authorize
+                        this specific machine in your Google Sheet by adding this ID next to your email.</small>
+                </div>
+                <button id="saveRemoteConfigBtn" style="width: 100%; justify-content: center;">Save
+                    Configuration</button>
+            </div>
+
+            <!-- SYSTEM UPDATE CARD -->
+            <div class="glass-card" style="max-width: 500px; margin-top: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h3 style="margin: 0;">🚀 System Update</h3>
+                    <span id="updateBadgeStatus" class="badge" style="background: #eff6ff; color: var(--primary); font-size: 11px; padding: 4px 10px; border-radius: 12px; font-weight: 700;">v1.0.0</span>
+                </div>
+                <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.5; margin-bottom: 20px;">
+                    Check for the latest updates from GitHub. All customer settings, database links, and WhatsApp logins are safeguarded during updates.
+                </p>
+
+                <div style="background: rgba(0,0,0,0.02); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 10px;">
+                        <span style="color: var(--text-secondary);">Installed Version:</span>
+                        <strong id="displayCurrentVersion">1.0.0</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 10px;">
+                        <span style="color: var(--text-secondary);">Latest Remote Version:</span>
+                        <strong id="displayLatestVersion" style="color: var(--primary);">Checking...</strong>
+                    </div>
+                    <div id="displayCommitRow" style="display: none; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
+                        <span style="color: var(--text-muted);">Latest Changes:</span>
+                        <span id="displayCommitMsg" style="color: var(--text); font-weight: 500; text-align: right; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                        <span style="color: var(--text-muted);">Last Checked:</span>
+                        <span id="displayLastChecked" style="color: var(--text-muted);">Never</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button id="btnCheckUpdate" class="secondary" style="flex: 1; justify-content: center;" onclick="checkSystemUpdate(true)">
+                        🔄 Check for Updates
+                    </button>
+                    <button id="btnPerformUpdate" class="primary btn-update-pill" style="flex: 1; justify-content: center; display: none;" onclick="triggerUpdateFlow()">
+                        ⬆️ Update Now
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- BUSY ADDON TAB -->
+        <div id="busy" class="tab-content">
+            <div class="header" style="margin-bottom: 32px;">
+                <h2>
+                    <span style="color: #10b981;">⚡</span> Busy Automator
+                    <span
+                        style="font-size: 13px; background: #ecfdf5; color: #10b981; padding: 4px 12px; border-radius: 99px; font-weight: 700; margin-left: 12px;">V2.1.0</span>
+                </h2>
+            </div>
+
+            <div class="glass-card" style="margin-bottom: 32px; border-left: 6px solid #10b981;">
+                <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+                    <div id="busyDbStatus" class="status-badge"
+                        style="background: #ecfdf5; border-color: #d1fae5; color: #10b981;">
+                        <div class="status-dot success"></div>
+                        System Active
+                    </div>
+                    <div class="status-badge"
+                        style="background: #f1f5f9; border-color: #e2e8f0; color: var(--text-secondary);">
+                        <span id="resolvedDbText">Initializing Database...</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <p style="color: var(--text-secondary); font-size: 15px; margin-bottom: 24px; line-height: 1.6;">
+                        Automate your collection process with smart bulk reminders and professional PDF statements
+                        generated directly from your Busy data.</p>
+                    <div style="display: flex; gap: 16px; align-items: center;">
+                        <button id="btnTriggerBusy" class="btn-hero" style="background: var(--success-gradient);">▶ Send
+                            Reminders</button>
+                        <button id="btnScanBusy" class="secondary btn-hero">🔍 Scan Accounts</button>
+                        <span id="triggerFeedback"
+                            style="color: var(--primary); font-weight: 600; font-size: 14px;"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="scanResultsArea"
+                style="display: none; margin-bottom: 24px; background: var(--card-bg); padding: 30px; border-radius: 20px; border: 1px solid var(--border-color); box-shadow: var(--shadow-lg);">
+                <div
+                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
+                    <div>
+                        <h4 style="margin:0; font-size: 20px; font-weight: 800; color: var(--text);">Account Insight
+                        </h4>
+                        <div id="scanCount"
+                            style="font-size: 13px; color: var(--text-muted); margin-top: 5px; font-weight: 600;">Found:
+                            0
+                            accounts</div>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:30px; margin-top:10px;">
+                    <div style="text-align: right;">
+                        <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Total
+                            Receivable (Dr)</div>
+                        <div id="totalDr" style="font-weight: 800; color: #ef4444; font-size: 20px;">₹0.00</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Total Payable
+                            (Cr)</div>
+                        <div id="totalCr" style="font-weight: 800; color: #10b981; font-size: 20px;">₹0.00</div>
+                    </div>
+                </div>
+
+                <div id="scanProgress" style="display:none; text-align:center; padding: 50px 0;">
+                    <div class="status-dot success"
+                        style="width: 14px; height: 14px; display:inline-block; margin-bottom: 15px; animation: pulse 1s infinite;">
+                    </div>
+                    <div style="font-size: 15px; color: var(--text-secondary); font-weight: 600;">Reading real-time data
+                        from BUSY...</div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">Synchronizing balances and
+                        contact information.</div>
+                </div>
+
+                <div id="scanTableWrapper" style="max-height: 480px; overflow-y: auto; padding-right: 5px;">
+                    <table style="width:100%; border-collapse: separate; border-spacing: 0 10px;">
+                        <thead style="position: sticky; top: 0; background: var(--bg-color); z-index: 10;">
+                            <tr
+                                style="text-align: left; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;">
+                                <th style="padding: 12px 15px; border-bottom: 1px solid var(--border-color);">Client
+                                    Name</th>
+                                <th style="padding: 12px 15px; border-bottom: 1px solid var(--border-color);">Contact
+                                    info</th>
+                                <th
+                                    style="padding: 12px 15px; border-bottom: 1px solid var(--border-color); text-align:right;">
+                                    Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scanTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="glass-card" style="max-width: 800px;">
+                <div id="busyFirmSelector"
+                    style="display:flex; align-items:center; gap:10px; margin-bottom:30px; overflow-x:auto; padding-bottom:5px;">
+                    <div class="firm-pill add" onclick="addNewFirm()">+ New Plan</div>
+                </div>
+
+                <div id="planConfigArea" style="display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <h3 style="margin:0; display:flex; align-items:center; gap:10px;">
+                            <span style="font-size: 20px;">📅</span> Configure Schedule
+                        </h3>
+                        <div style="display:flex; gap:10px;">
+                            <button id="btnClosePlan" class="secondary btn-pill" onclick="closePlanPanel()">
+                                <span>✖</span> Close Panel
+                            </button>
+                            <button id="btnDeleteFirm" class="btn-danger btn-pill" onclick="deleteActivePlan()">
+                                <span>🗑️</span> Remove Plan
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid-2" style="align-items: start;">
+                        <!-- LEFT COLUMN -->
+                        <div style="display: flex; flex-direction: column; gap: 20px;">
+                            <!-- Target Card -->
+                            <div style="background: rgba(0,0,0,0.02); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);">
+                                <h4 style="margin-top:0; margin-bottom: 15px; color: var(--primary);">🎯 Target Configuration</h4>
+                                <div class="form-group">
+                                    <label>Plan Name</label>
+                                    <input type="text" id="confFirmName" placeholder="e.g. Daily Morning Reminders">
+                                </div>
+                                <div class="form-group">
+                                    <select id="confGroupType" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text); margin-bottom:10px;">
+                                        <option value="Sundry Debtors">Sundry Debtors</option>
+                                        <option value="Sundry Creditors">Sundry Creditors</option>
+                                    </select>
+
+                                    <div id="confSubGroupWrapper" style="display:none;">
+                                        <label style="font-size:11px; color:var(--text-secondary); margin-bottom:4px; display:block;">Sub Group</label>
+                                        <select id="confSubGroup" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text); margin-bottom:10px;">
+                                            <option value="">(All)</option>
+                                        </select>
+                                    </div>
+
+                                    <div id="confPartyWrapper" style="display:none;">
+                                        <label style="font-size:11px; color:var(--text-secondary); margin-bottom:4px; display:block;">Specific Parties</label>
+                                        <button id="btnOpenPartyModal" class="secondary" onclick="openPartyModal()" style="width:100%; text-align:left; display:flex; justify-content:space-between; align-items:center; background:var(--card-bg); border:1px solid var(--border-color); padding:8px 12px;">
+                                            <span>Select Parties</span>
+                                            <span id="partyBadge" class="badge" style="font-size:10px; background:var(--border-color); color:var(--text-secondary); padding:2px 8px; border-radius:12px;">All</span>
+                                        </button>
+                                        <input type="hidden" id="confSpecificPartiesJSON">
+                                    </div>
+
+                                    <div id="confMaterialCenterWrapper" style="margin-top:10px;">
+                                        <label style="font-size:11px; color:var(--text-secondary); margin-bottom:4px; display:block;">Material Center (MC)</label>
+                                        <select id="confMaterialCenter" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text);">
+                                            <option value="">(All MC)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Database Card -->
+                            <div style="background: rgba(0,0,0,0.02); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);">
+                                <h4 style="margin-top:0; margin-bottom: 15px; color: var(--primary);">💾 Database Connection</h4>
+                                <div class="form-group" style="margin-bottom:15px;">
+                                    <label>Database Type</label>
+                                    <select id="confDbType" onchange="toggleDbFields()" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text); margin-top:5px;">
+                                        <option value="Access">Access File (Default)</option>
+                                        <option value="MSSQL">SQL Server (MSSQL)</option>
+                                    </select>
+                                </div>
+
+                                <div id="dbAccessGroup" class="form-group">
+                                    <label>Database Folder Path</label>
+                                    <input type="text" id="confDbPath" placeholder="C:\BUSY DATA\COMP0001">
+                                    <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;">Linked to specific firm folder containing .mdb/.bds files.</small>
+                                </div>
+
+                                <div id="dbMssqlGroup" style="display:none; background: rgba(16, 185, 129, 0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.15);">
+                                    <div class="grid-2">
+                                        <div class="form-group">
+                                            <label>Server Name / Instance</label>
+                                            <input type="text" id="confDbServer" placeholder="e.g. SERVER\BUSY">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Database Name</label>
+                                            <input type="text" id="confDbName" placeholder="e.g. COMP0018">
+                                        </div>
+                                    </div>
+                                    <div class="grid-2">
+                                        <div class="form-group">
+                                            <label>SQL User ID</label>
+                                            <input type="text" id="confDbUser" placeholder="sa">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>SQL Password (Optional)</label>
+                                            <input type="password" id="confDbPass" placeholder="******">
+                                        </div>
+                                    </div>
+                                    <small style="color: var(--text-muted); font-size: 11px; display: block; margin-top:8px;">Note: Leave password blank to use default if configured.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT COLUMN -->
+                        <div style="display: flex; flex-direction: column; gap: 20px;">
+                            <!-- Automation Card -->
+                            <div class="automation-card" style="background: rgba(16, 185, 129, 0.03); padding: 20px; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.15);">
+                                <label style="display:flex; align-items:center; gap:12px; cursor:pointer; color: var(--success); font-weight: 700; font-size: 15px; margin-bottom: 20px;">
+                                    <input type="checkbox" id="confSchedEnabled" style="width: 18px; height: 18px;"> Enable Active Automation
+                                </label>
+
+                                <div id="schedSettings">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+                                        <label style="font-size:12px; color: var(--text-secondary);">Recurrence Pattern</label>
+                                        <div style="display:flex; align-items:center; gap:8px;">
+                                            <span id="nextRunDisplay" style="font-size: 11px; color: var(--accent); font-weight:600;"></span>
+                                            <button id="btnTriggerSchedNow" style="padding: 4px 10px; font-size: 10px; background: rgba(139, 92, 246, 0.1); border: 1px solid var(--accent); color: var(--accent); cursor: pointer; border-radius: 6px; height: auto;">Run Now</button>
+                                        </div>
+                                    </div>
+
+                                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                                        <select id="confSchedFreq">
+                                            <option value="daily">Every Day</option>
+                                            <option value="weekly">Every Week</option>
+                                            <option value="fortnightly">Every 15 Days</option>
+                                            <option value="monthly">Every Month</option>
+                                        </select>
+                                        <input type="time" id="confSchedTime" value="10:00">
+                                    </div>
+
+                                    <div id="weeklyDayGroup" style="margin-top:15px; display:none;">
+                                        <label style="font-size:12px; color: var(--text-secondary);">Select Day</label>
+                                        <select id="confSchedDay" style="margin-top:5px;">
+                                            <option value="1">Monday</option>
+                                            <option value="2">Tuesday</option>
+                                            <option value="3">Wednesday</option>
+                                            <option value="4">Thursday</option>
+                                            <option value="5">Friday</option>
+                                            <option value="6">Saturday</option>
+                                            <option value="0">Sunday</option>
+                                        </select>
+                                    </div>
+
+                                    <div id="monthlyDayGroup" style="margin-top:15px; display:none;">
+                                        <label style="font-size:12px; color: var(--text-secondary);">Select Date</label>
+                                        <input type="number" id="confSchedDate" min="1" max="31" value="1" style="margin-top:5px;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Options Card -->
+                            <div style="background: rgba(0,0,0,0.02); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);">
+                                <h4 style="margin-top:0; margin-bottom: 15px; color: var(--accent);">📄 Statement Options</h4>
+                                <div>
+                                    <label style="font-size:12px; color: var(--text-secondary); margin-bottom:12px; display:block;">Statement Detail Level</label>
+                                    <div style="display:flex; gap:20px; font-size:14px;">
+                                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="radio" name="reminderType" value="balance"> Summary</label>
+                                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="radio" name="reminderType" value="pending"> All Bills</label>
+                                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="radio" name="reminderType" value="due" checked> Overdue Only</label>
+                                    </div>
+                                </div>
+
+                                <div style="margin-top:25px; border-top: 1px solid var(--border-color); padding-top:20px;">
+                                    <label style="font-size:12px; color: var(--text-secondary); margin-bottom:12px; display:block;">Due Days Calculation Basis</label>
+                                    <div style="display:flex; gap:20px; font-size:14px;">
+                                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="radio" name="dueDayBasis" value="due" checked> Due Date (Default)</label>
+                                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="radio" name="dueDayBasis" value="bill"> Bill Date</label>
+                                    </div>
+                                </div>
+
+                                <div style="margin-top:25px; border-top: 1px solid var(--border-color); padding-top:20px;">
+                                    <label style="font-size:12px; color: var(--text-secondary); margin-bottom:8px; display:block;">
+                                        Send via WhatsApp Account
+                                    </label>
+                                    <select id="confWhatsappClientId" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text);">
+                                        <option value="default">Default Account</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- PDC Alerts Card -->
+                            <div class="automation-card" style="background: rgba(239, 68, 68, 0.03); padding: 20px; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.15); margin-top: 20px;">
+                                <h4 style="margin-top:0; margin-bottom: 15px; color: #ef4444; display:flex; align-items:center; gap:8px;">
+                                    <span>🏦</span> PDC Alerts
+                                </h4>
+                                <label style="display:flex; align-items:center; gap:12px; cursor:pointer; color: var(--text); font-weight: 600; font-size: 14px; margin-bottom: 15px;">
+                                    <input type="checkbox" id="confPdcEnabled" style="width: 16px; height: 16px;"> Enable Automated PDC Reminders
+                                </label>
+                                <p style="color: var(--text-muted); font-size: 12px; margin-bottom: 15px; line-height: 1.5;">
+                                    Automatically send WhatsApp reminders to customers 2 days before, 1 day before, and on the exact day their Post-Dated Cheque is due for deposit.
+                                </p>
+                                <div id="pdcSettingsPanel" style="display:flex; flex-direction:column; gap:15px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                                    <div>
+                                        <label style="font-size:12px; color: var(--text-secondary); margin-bottom:6px; display:block;">Daily Alert Time</label>
+                                        <input type="time" id="confPdcTime" value="09:00" style="padding:6px; border-radius:6px; border:1px solid var(--border-color);">
+                                    </div>
+                                    <button id="btnTriggerPdcNow" class="secondary" style="font-size:12px; padding:6px 12px; width:fit-content;" onclick="triggerPdcNow()">
+                                        ▶ Test PDC Alerts Now
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="btnSaveBusyConfig" style="width:100%; justify-content: center; margin-top: 25px; background: var(--primary-gradient); color: #fff; font-weight:700;">
+                        💾 Save Plan Changes
+                    </button>
+                </div>
+        </div>
+        </div>
+
+        <!-- Batch Stock View -->
+        <div id="batchstock" class="tab-content">
+            <div class="header" style="margin-bottom: 32px;">
+                <h2>
+                    <span style="color: #3b82f6;">📦</span> Batch Stock Viewer
+                </h2>
+            </div>
+            
+            <div class="glass-card" style="margin-bottom: 24px; border-left: 6px solid #3b82f6;">
+                <div style="display: flex; gap: 16px; margin-bottom: 20px;">
+                    <div style="flex: 1;">
+                        <label class="form-label">Select Firm</label>
+                        <select id="bsFirmSelect" class="form-input">
+                            <option value="">Loading Firms...</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label class="form-label">Material Centre Group</label>
+                        <button id="btnOpenGroupModal" class="form-input" style="text-align: left; background: #fff; cursor: pointer;">
+                            <span id="groupSelectStatus" style="color: var(--text-secondary);">Select Groups (All)</span>
+                        </button>
+                    </div>
+                    <div style="flex: 1;">
+                        <label class="form-label">Material Centre</label>
+                        <button id="btnOpenMcModal" class="form-input" style="text-align: left; background: #fff; cursor: pointer;">
+                            <span id="mcSelectStatus" style="color: var(--text-secondary);">Select Material Centres (All)</span>
+                        </button>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 16px; align-items: center;">
+                    <button id="btnViewBatchStock" class="btn-hero" style="background: var(--primary-gradient);">👁️ View Data</button>
+                    <button id="btnGenerateBatchPdf" class="secondary btn-hero">📄 Generate PDF</button>
+                    <span id="batchStockFeedback" style="font-size: 14px; font-weight: 500;"></span>
+                </div>
+            </div>
+
+            <div class="glass-card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+                <div class="table-container" style="flex: 1; min-height: 400px; max-height: 60vh; overflow-y: auto;">
+                    <table class="data-table" style="width: 100%; text-align: left; border-collapse: collapse;">
+                        <thead style="position: sticky; top: 0; background: #ffffff; z-index: 1;">
+                            <tr style="border-bottom: 2px solid var(--border-color);">
+                                <th style="padding: 12px 16px;">Date</th>
+                                <th style="padding: 12px 16px;">Item Name</th>
+                                <th style="padding: 12px 16px;">Unit</th>
+                                <th style="padding: 12px 16px;">Material Centre</th>
+                                <th style="padding: 12px 16px;">Batch No.</th>
+                                <th style="padding: 12px 16px; text-align: right;">Total Qty In</th>
+                                <th style="padding: 12px 16px; text-align: right;">Total Qty Out</th>
+                                <th style="padding: 12px 16px; text-align: right;">Pending Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody id="batchStockTableBody">
+                            <tr><td colspan="8" style="padding: 24px; text-align: center; color: var(--text-secondary);">Select filters and click View Data to load batch stock.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!-- PAYMENT CONFIG TAB -->
+        <div id="paymentconfig" class="tab-content">
+            <div class="header">
+                <h2>Payment Details Configuration</h2>
+            </div>
+            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">
+                These details will be automatically sent when a customer WhatsApps the word <strong>"PAYMENT"</strong> to your bot.
+            </p>
+            <div class="glass-card" style="max-width: 800px;">
+                <div style="margin-bottom: 20px;">
+                    <label class="form-label">Select Firm</label>
+                    <select id="payFirmSelect" class="form-input">
+                        <option value="">Loading Firms...</option>
+                    </select>
+                </div>
+                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">
+                <form id="paymentConfigForm" style="display:flex; flex-direction:column; gap:15px;">
+                    <div>
+                        <label>Bank Name</label>
+                        <input type="text" id="payBankName" placeholder="e.g. HDFC Bank" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    </div>
+                    <div>
+                        <label>Account Name</label>
+                        <input type="text" id="payAccountName" placeholder="e.g. ABC Traders" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    </div>
+                    <div>
+                        <label>Account Number</label>
+                        <input type="text" id="payAccountNumber" placeholder="e.g. 50200012345678" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    </div>
+                    <div>
+                        <label>IFSC Code</label>
+                        <input type="text" id="payIfscCode" placeholder="e.g. HDFC0001234" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    </div>
+                    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 10px 0;">
+                    <div>
+                        <label>UPI ID</label>
+                        <input type="text" id="payUpiId" placeholder="e.g. yourbusiness@upi" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    </div>
+                    <div>
+                        <label>Phone Number (UPI)</label>
+                        <input type="text" id="payPhone" placeholder="e.g. 9876543210" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    </div>
+                    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 10px 0;">
+                    <div>
+                        <label>Upload Custom QR Code (Optional)</label><br>
+                        <span style="font-size: 11px; color: var(--text-secondary);">If left blank and a UPI ID is provided, the system will auto-generate the QR Code for you.</span><br>
+                        <input type="file" id="payQrImage" accept="image/*" style="margin-top: 5px;">
+                        <div id="payQrPreview" style="margin-top: 10px; font-size: 12px; color: var(--success);"></div>
+                    </div>
+                    
+                    <button type="button" class="btn-primary" onclick="savePaymentConfig()" style="margin-top: 10px;">Save Payment Details</button>
+                </form>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="app.js"></script>
+
+    <script>
+        const BUSY_API = '/api/busy';
+        let currentFirms = [];
+        let activeFirmId = null;
+
+        async function loadBusyConfig() {
+            try {
+                console.log("🚀 Starting loadBusyConfig...");
+                const res = await fetch(`${BUSY_API}/firms`);
+                if (!res.ok) throw new Error(`Server returned ${res.status}`);
+
+                const data = await res.json();
+                console.log("📦 Config loaded:", data);
+
+                if (data.success) {
+                    currentFirms = data.firms || [];
+                    renderFirmSelector();
+                } else {
+                    throw new Error(data.error || "Unknown success=false");
+                }
+            } catch (e) {
+                console.error("❌ Failed to load config:", e);
+                // Only show toast if it's a real error, not just initial empty state
+                if (currentFirms.length === 0) showToast("Could not load plans. Is server running?", "error");
+            }
+        }
+
+        async function initBusyAddon() {
+            console.log("🏁 Initializing Busy Addon...");
+            await loadBusyConfig();
+
+            if (currentFirms.length > 0) {
+                console.log("✅ Firms found, switching to first.");
+                switchFirm(currentFirms[0].id);
+            } else {
+                console.log("⚠️ No firms found, attempting to create default.");
+                try {
+                    const res = await fetch(`${BUSY_API}/firms/add`, { method: 'POST' });
+                    const data = await res.json();
+                    if (data.success) {
+                        await loadBusyConfig();
+                        if (data.firm) switchFirm(data.firm.id);
+                    }
+                } catch (e) {
+                    console.error("Failed to create default firm:", e);
+                }
+            }
+        }
+
+        // Robust Initialization
+        window.addEventListener('load', () => {
+            // Slight delay to ensure DOM is fully painted
+            setTimeout(initBusyAddon, 500);
+        });
+
+
+        function renderFirmSelector() {
+            const container = document.getElementById('busyFirmSelector');
+            const pills = currentFirms.map((f, i) => `
+                <div class="firm-pill ${f.id === activeFirmId ? 'active' : ''}" onclick="switchFirm('${f.id}')">
+                    <span style="font-size:10px; opacity:0.6; margin-right:5px;">#${i + 1}</span> ${f.name || 'Unnamed Plan'}
+                </div>
+            `).join('');
+            container.innerHTML = pills + `<div class="firm-pill add" onclick="addNewFirm()">+ New Plan</div>`;
+        }
+
+        async function switchFirm(id) {
+            activeFirmId = id;
+            const firm = currentFirms.find(f => f.id === id);
+            if (!firm) return;
+
+            document.getElementById('planConfigArea').style.display = 'block';
+            renderFirmSelector();
+
+            // Populate Main Fields
+            document.getElementById('confFirmName').value = firm.name || "";
+            document.getElementById('confDbType').value = firm.dbType || "Access";
+            document.getElementById('confDbPath').value = firm.dbPath || "";
+            document.getElementById('confDbServer').value = firm.dbServer || "";
+            document.getElementById('confDbName').value = firm.dbName || ""; // Trust the config first
+            document.getElementById('confDbUser').value = firm.dbUser || "";
+            document.getElementById('confDbPass').value = firm.dbPassword || "";
+
+            toggleDbFields(); // Refresh UI state
+
+            // --- Group Hierarchy Logic ---
+            // 1. Determine Root Type (Sundry Debtors/Creditors)
+            let rootGroup = "Sundry Debtors";
+            if (firm.targetGroup === "Sundry Creditors" || firm.targetGroup === "Sundry Debtors") {
+                rootGroup = firm.targetGroup;
+            } else {
+                // If it's a SubGroup/Party, we guess "Sundry Debtors" first unless we saved the root.
+                // NOTE: For best UX in future, save 'rootGroup' in config.
+                // For now, default to Sundry Debtors. User can switch if needed.
+                // Or try to see if the name helps.
+            }
+            // Force select existing root if possible
+            document.getElementById('confGroupType').value = rootGroup;
+
+            // 2. Load Root Level Data
+            await loadHierarchy(rootGroup, 'subgroup'); // Fills SubGroups
+            // Also load root level parties initially (if any)
+            await loadHierarchy(rootGroup, 'party');
+
+            // 3. Match Target Group (SubGroup)
+            const subSelect = document.getElementById('confSubGroup');
+            const options = Array.from(subSelect.options);
+
+            // Try to find if firm.targetGroup is one of the loaded subgroups (by Name)
+            // options[i].text is Name, .value is Code.
+            // firm.targetGroup handles Name usually.
+            const matchedSub = options.find(o => o.text === firm.targetGroup);
+
+            if (matchedSub) {
+                subSelect.value = matchedSub.value;
+                // It was a subgroup selection. Load parties for THIS subgroup.
+                await loadHierarchy(matchedSub.value, 'party');
+            } else {
+                subSelect.value = ""; // It was likely the Root Group itself
+            }
+
+            // Normalize to Strings for consistent comparison
+            currentPartySelection = (firm.specificParties || []).map(String);
+            updatePartyBadge();
+            
+            // Load Material Centers
+            await loadMaterialCenters(firm);
+
+
+            // --- Schedule Logic ---
+            document.getElementById('confSchedEnabled').checked = firm.scheduleEnabled !== false;
+
+            const cron = firm.scheduleCron || "0 10 * * *";
+            const parts = cron.split(' ');
+            if (parts.length >= 3) {
+                document.getElementById('confSchedTime').value = `${parts[2].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+            }
+
+            document.getElementById('weeklyDayGroup').style.display = 'none';
+            document.getElementById('monthlyDayGroup').style.display = 'none';
+
+            if (parts.length >= 6) {
+                if (parts[5] !== '*' && parts[5].length === 1) {
+                    document.getElementById('confSchedFreq').value = 'weekly';
+                    document.getElementById('confSchedDay').value = parts[5];
+                    document.getElementById('weeklyDayGroup').style.display = 'block';
+                } else if (parts[3] === '1,15') {
+                    document.getElementById('confSchedFreq').value = 'fortnightly';
+                } else if (parts[3] !== '*' && !parts[3].includes(',')) {
+                    document.getElementById('confSchedFreq').value = 'monthly';
+                    document.getElementById('confSchedDate').value = parts[3];
+                    document.getElementById('monthlyDayGroup').style.display = 'block';
+                }
+            } else { // Default to daily if cron is not fully specified
+                document.getElementById('confSchedFreq').value = 'daily';
+            }
+
+
+            if (firm.reminderType) {
+                const radios = document.getElementsByName('reminderType');
+                for (let r of radios) { if (r.value === firm.reminderType) r.checked = true; }
+            } else { // Default to 'due' if not set
+                for (let r of radios) { if (r.value === 'due') r.checked = true; }
+            }
+
+            if (firm.dueDayBasis) {
+                const radios = document.getElementsByName('dueDayBasis');
+                for (let r of radios) { if (r.value === firm.dueDayBasis) r.checked = true; }
+            } else { // Default to 'due'
+                const radios = document.getElementsByName('dueDayBasis');
+                for (let r of radios) { if (r.value === 'due') r.checked = true; }
+            }
+
+            // Load WhatsApp Client selection
+            const selectEl = document.getElementById('confWhatsappClientId');
+            if (selectEl) selectEl.value = firm.whatsappClientId || "default";
+
+            // Load PDC Settings
+            document.getElementById('confPdcEnabled').checked = firm.pdcEnabled === true;
+            document.getElementById('confPdcTime').value = firm.pdcTime || "09:00";
+
+            // Sync placeholders and status
+            fetchFirmDetails(id);
+            updateNextRunDisplay();
+
+            // Clear previous scan
+            document.getElementById('scanResultsArea').style.display = 'none';
+        }
+
+        async function addNewFirm() {
+            const res = await fetch(`${BUSY_API}/firms/add`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                await loadBusyConfig();
+                switchFirm(data.firm.id);
+            }
+        }
+
+        async function fetchFirmDetails(id) {
+            // Reset resolvedDbText and placeholders first
+            document.getElementById('resolvedDbText').innerHTML = `Searching for Latest DB...`;
+            document.getElementById('resolvedDbText').title = '';
+
+            // 1. Resolve Path
+            try {
+                const pathRes = await fetch(`${BUSY_API}/resolve-path?firmId=${id}`);
+                const pathData = await pathRes.json();
+                if (pathData.path) {
+                    const filename = pathData.path.split(/[\\/]/).pop();
+                    document.getElementById('resolvedDbText').innerHTML = `Linked: <b style="color:var(--primary);">${filename}</b>`;
+                    document.getElementById('resolvedDbText').title = pathData.path;
+                }
+            } catch (pe) { console.error("Error resolving path:", pe); }
+
+            // 2. Auto Detect Profile
+            try {
+                const infoRes = await fetch(`${BUSY_API}/company-info?firmId=${id}`);
+                const infoData = await infoRes.json();
+                if (infoData.success && infoData.info) {
+                    const info = infoData.info;
+                    // Note: Overrides removed, system now uses detected profile exclusively.
+                }
+            } catch (ie) { console.error("Error fetching company info:", ie); }
+        }
+
+        function updateNextRunDisplay() {
+            const enabled = document.getElementById('confSchedEnabled').checked;
+            const timeVal = document.getElementById('confSchedTime').value;
+            const freq = document.getElementById('confSchedFreq').value;
+            const dayOfWeek = parseInt(document.getElementById('confSchedDay').value);
+            const dayOfMonth = parseInt(document.getElementById('confSchedDate').value);
+            const display = document.getElementById('nextRunDisplay');
+
+            if (!enabled || !timeVal) { display.innerText = ""; return; }
+
+            const [hh, mm] = timeVal.split(':').map(Number);
+            const now = new Date();
+            const target = new Date();
+            target.setHours(hh, mm, 0, 0);
+
+            if (freq === 'daily') { if (target <= now) target.setDate(target.getDate() + 1); }
+            else if (freq === 'weekly') {
+                let daysUntil = (dayOfWeek - now.getDay() + 7) % 7;
+                if (daysUntil === 0 && target <= now) daysUntil = 7;
+                target.setDate(now.getDate() + daysUntil);
+            }
+            else if (freq === 'fortnightly') {
+                const d1 = new Date(target); d1.setDate(1);
+                const d15 = new Date(target); d15.setDate(15);
+                if (now < d1) target.setDate(1);
+                else if (now < d15) target.setDate(15);
+                else { target.setMonth(target.getMonth() + 1); target.setDate(1); }
+            }
+            else if (freq === 'monthly') {
+                target.setDate(dayOfMonth);
+                if (target <= now) target.setMonth(target.getMonth() + 1);
+            }
+
+            const diffMs = target - now;
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const diffHr = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const diffMin = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+            let text = "Next run in ";
+            if (diffDays > 0) text += `${diffDays}d `;
+            text += `${diffHr}h ${diffMin}m`;
+            display.innerText = text;
+        }
+
+        document.getElementById('btnTriggerBusy').onclick = async () => {
+            if (!activeFirmId) { showToast("Please select or add a plan first.", 'warning'); return; }
+            const btn = document.getElementById('btnTriggerBusy');
+            const original = btn.innerText;
+            const fb = document.getElementById('triggerFeedback');
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+            fb.innerText = "⏳ Preparing reminders...";
+
+            try {
+                const res = await fetch(`${BUSY_API}/trigger`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ firmId: activeFirmId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    btn.innerText = "✅ Bulk Sent";
+                    fb.innerText = "🎯 Messages queued successfully!";
+                    setTimeout(() => { btn.disabled = false; btn.innerText = original; fb.innerText = ""; }, 5000);
+                } else {
+                    showToast("Trigger Failed: " + data.error, 'error');
+                    btn.disabled = false; btn.innerText = original; fb.innerText = "";
+                }
+            } catch (e) {
+                console.error("Trigger error:", e);
+                showToast("Trigger Failed: " + e.message, 'error');
+                btn.disabled = false; btn.innerText = original; fb.innerText = "";
+            }
+        };
+
+        document.getElementById('btnScanBusy').onclick = async () => {
+            if (!activeFirmId) { showToast("Please select or add a firm first.", 'warning'); return; }
+            const btn = document.getElementById('btnScanBusy');
+            const area = document.getElementById('scanResultsArea');
+            const tbody = document.getElementById('scanTableBody');
+            const totalEl = document.getElementById('scanTotal');
+            const countEl = document.getElementById('scanCount');
+            const progress = document.getElementById('scanProgress');
+            const wrapper = document.getElementById('scanTableWrapper');
+
+            btn.disabled = true;
+            btn.innerText = "Scanning...";
+            area.style.display = 'block';
+            wrapper.style.display = 'none';
+            progress.style.display = 'block';
+
+            try {
+                const res = await fetch(`${BUSY_API}/scan?firmId=${activeFirmId}`);
+                const data = await res.json();
+                progress.style.display = 'none';
+                wrapper.style.display = 'block';
+
+                if (data.success) {
+                    // Check if 'type' is present (fallback for legacy backend)
+                    const hasType = data.results.some(r => r.type);
+
+                    if (!hasType && data.results.length > 0) {
+                        // FALLBACK VIEW
+                        let displayResults = data.results;
+                        if (currentPartySelection && currentPartySelection.length > 0) {
+                            displayResults = data.results.filter(r => currentPartySelection.includes(String(r.code)) || currentPartySelection.includes(r.name));
+                        }
+
+                        tbody.innerHTML = displayResults.map(r => `
+                            <tr class="scan-row">
+                                <td style="padding: 15px; font-weight: 600;">${r.name}</td>
+                                <td style="padding: 15px; color: var(--text-secondary);">${r.mobile}</td>
+                                <td style="padding: 15px; text-align:right; font-weight: 700;">₹${r.due}</td>
+                            </tr>`).join('');
+
+                        let total = displayResults.reduce((acc, r) => acc + parseFloat(r.due.replace(/,/g, '')), 0);
+                        if (typeof totalEl !== 'undefined') totalEl.innerHTML = `₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2 })} <div style="font-size:10px; color:orange; margin-top:5px;">(Restart Node Server for Dr/Cr split)</div>`;
+                        countEl.innerText = `Found: ${displayResults.length} accounts`;
+                        return;
+                    }
+
+                    // STANDARD SPLIT VIEW
+                    let receivables = data.results.filter(r => r.type === 'Dr');
+                    let payables = data.results.filter(r => r.type === 'Cr');
+
+                    if (currentPartySelection && currentPartySelection.length > 0) {
+                        receivables = receivables.filter(r => currentPartySelection.includes(String(r.code)));
+                        payables = payables.filter(r => currentPartySelection.includes(String(r.code)));
+                    }
+
+                    let totalDr = 0;
+                    let totalCr = 0;
+
+                    const renderRow = (r) => {
+                        const amt = parseFloat(r.due.replace(/,/g, ''));
+                        if (r.type === 'Dr') totalDr += amt; else totalCr += amt;
+                        const typeColor = r.type === 'Dr' ? '#ef4444' : '#10b981';
+                        return `
+                        <tr class="scan-row">
+                            <td style="padding: 15px; font-weight: 600;">${r.name}</td>
+                            <td style="padding: 15px; color: var(--text-secondary);">${r.mobile}</td>
+                            <td style="padding: 15px; text-align:right; font-weight: 700;">
+                                ₹${r.due} <span style="font-size:10px; color:${typeColor}; background:${typeColor}20; padding:2px 6px; border-radius:4px;">${r.type}</span>
+                            </td>
+                        </tr>`;
+                    };
+
+                    let html = '';
+
+                    if (receivables.length > 0) {
+                        html += `<tr><td colspan="3" style="padding:10px; background:var(--bg-color); font-weight:700; color:#ef4444; font-size:12px; text-transform:uppercase; letter-spacing:1px;">Receivables (Dr)</td></tr>`;
+                        html += receivables.map(renderRow).join('');
+                    }
+
+                    if (payables.length > 0) {
+                        html += `<tr><td colspan="3" style="padding:10px; background:var(--bg-color); font-weight:700; color:#10b981; font-size:12px; text-transform:uppercase; letter-spacing:1px;">Payables (Cr)</td></tr>`;
+                        html += payables.map(renderRow).join('');
+                    }
+
+                    if (receivables.length === 0 && payables.length === 0) {
+                        html = '<tr><td colspan="3" style="padding:40px; text-align:center; color: var(--text-muted);">No accounts with pending dues found.</td></tr>';
+                    }
+
+                    tbody.innerHTML = html;
+
+                    if (document.getElementById('totalDr')) {
+                        document.getElementById('totalDr').innerText = `₹${totalDr.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+                        document.getElementById('totalCr').innerText = `₹${totalCr.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+                    } else {
+                        // Fallback in case HTML structure didn't update yet (but it should have in previous chunk)
+                        totalEl.innerHTML = `Dr: ₹${totalDr.toLocaleString('en-IN')} | Cr: ₹${totalCr.toLocaleString('en-IN')}`;
+                    }
+
+                    countEl.innerText = `Found: ${data.results.length} accounts`;
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="3" style="padding:40px; text-align:center; color: var(--text-danger);">Error: ${data.error || 'Unknown error during scan.'}</td></tr>`;
+                    totalEl.innerText = `₹0.00`;
+                    countEl.innerText = `Found: 0 accounts`;
+                }
+            } catch (e) {
+                console.error("Scan Failed:", e);
+                showToast("Scan Failed: " + e.message, 'error');
+                tbody.innerHTML = `<tr><td colspan="3" style="padding:40px; text-align:center; color: var(--text-danger);">Scan Failed: ${e.message}</td></tr>`;
+                totalEl.innerText = `₹0.00`;
+                countEl.innerText = `Found: 0 accounts`;
+            } finally { btn.disabled = false; btn.innerText = "🔍 Scan Accounts"; }
+        };
+
+        // Hierarchy Logic
+        const groupSelect = document.getElementById('confGroupType');
+        const subGroupSelect = document.getElementById('confSubGroup');
+        const subGroupWrapper = document.getElementById('confSubGroupWrapper');
+        const partyWrapper = document.getElementById('confPartyWrapper');
+
+        let allAvailableParties = [];
+        let currentPartySelection = [];
+
+        async function loadHierarchy(parentGroup, targetType) {
+            if (!activeFirmId) return;
+            const targetSelect = targetType === 'subgroup' ? subGroupSelect : null; // Parties don't use select anymore
+            const wrapper = targetType === 'subgroup' ? subGroupWrapper : partyWrapper;
+
+            // Show loading
+            if (targetSelect) targetSelect.innerHTML = `<option value="">(Loading...)</option>`;
+            wrapper.style.display = 'block';
+
+            try {
+                const res = await fetch(`${BUSY_API}/hierarchy`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ firmId: activeFirmId, parentGroup })
+                });
+                const data = await res.json();
+
+                // Reset
+                if (targetSelect) targetSelect.innerHTML = `<option value="">(All)</option>`;
+
+                if (data.success) {
+                    if (targetType === 'subgroup') {
+                        const items = data.subgroups;
+                        if (items && items.length > 0) {
+                            items.forEach(item => {
+                                const opt = document.createElement('option');
+                                opt.value = item.Code;
+                                opt.text = item.Name;
+                                opt.dataset.name = item.Name;
+                                targetSelect.appendChild(opt);
+                            });
+                        } else {
+                            wrapper.style.display = 'none';
+                        }
+                    } else if (targetType === 'party') {
+                        allAvailableParties = data.accounts || [];
+                        document.getElementById('btnOpenPartyModal').disabled = allAvailableParties.length === 0;
+                        if (allAvailableParties.length === 0) {
+                            document.getElementById('partyBadge').innerText = "None Found";
+                        }
+                        // Check valid selection
+                        // If we just loaded new parties, keep selection ONLY if it exists in new list? 
+                        // Or keep all? Usually if group changes, selection is invalid.
+                        // But if just opening, we want to see existing.
+                        // Let's validate selection against available
+                        // actually, don't clear selection automatically unless group changed significantly.
+                        // For now, keep selection logic separate.
+                    }
+                }
+            } catch (e) {
+                console.error("Hierarchy Load Error", e);
+                if (targetSelect) targetSelect.innerHTML = `<option value="">(Error)</option>`;
+            }
+        }
+
+        // Event Listeners for Dropdowns
+        groupSelect.addEventListener('change', () => {
+            subGroupSelect.value = "";
+            currentPartySelection = []; // Clear selection on root change
+            updatePartyBadge();
+
+            loadHierarchy(groupSelect.value, 'subgroup');
+            loadHierarchy(groupSelect.value, 'party');
+        });
+
+        subGroupSelect.addEventListener('change', () => {
+            currentPartySelection = []; // Clear selection on subgroup change
+            updatePartyBadge();
+
+            if (subGroupSelect.value) {
+                const selectedOption = subGroupSelect.options[subGroupSelect.selectedIndex];
+                loadHierarchy(selectedOption.value, 'party');
+            } else {
+                const rootGroup = groupSelect.value;
+                loadHierarchy(rootGroup, 'party');
+            }
+        });
+
+        function updatePartyBadge() {
+            const badge = document.getElementById('partyBadge');
+            if (currentPartySelection.length > 0) {
+                badge.innerText = `${currentPartySelection.length} Selected`;
+                badge.style.background = 'var(--primary)';
+                badge.style.color = '#fff';
+            } else {
+                badge.innerText = "All";
+                badge.style.background = 'var(--border-color)';
+                badge.style.color = 'var(--text-secondary)';
+            }
+        }
+
+        // --- Modal Logic ---
+        function openPartyModal() {
+            const modal = document.getElementById('partyModal');
+            modal.classList.add('active');
+            renderPartyList();
+
+            document.getElementById('partySearch').value = "";
+            document.getElementById('partySearch').focus();
+        }
+
+        // Wrappers to ensure DOM is ready
+        window.addEventListener('load', () => {
+            const closeBtn = document.getElementById('partyModalClose');
+            if (closeBtn) closeBtn.onclick = () => {
+                document.getElementById('partyModal').classList.remove('active');
+            };
+        });
+
+        function renderPartyList(filter = "") {
+            const list = document.getElementById('partyList');
+            const search = filter.toLowerCase();
+
+            if (allAvailableParties.length === 0) {
+                list.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted);">No parties available to select.</div>`;
+                document.getElementById('partyCountDisplay').innerText = "0 parties";
+                return;
+            }
+
+            const filtered = allAvailableParties.filter(p => p.Name.toLowerCase().includes(search));
+
+            list.innerHTML = filtered.map(p => {
+                const isChecked = currentPartySelection.includes(String(p.Code));
+                return `
+                <div style="display:flex; align-items:center; padding:8px; border-bottom:1px solid var(--border-color);">
+                    <input type="checkbox" id="chk_${p.Code}" value="${p.Code}" ${isChecked ? 'checked' : ''} onchange="toggleParty('${p.Code}')" style="width:16px; height:16px; margin-right:10px;">
+                    <label for="chk_${p.Code}" style="font-size:13px; cursor:pointer; flex:1;">${p.Name}</label>
+                </div>
+                `;
+            }).join('');
+
+            document.getElementById('partyCountDisplay').innerText = `${filtered.length} visible`;
+        }
+
+        window.toggleParty = function (code) {
+            const sCode = String(code);
+            if (currentPartySelection.includes(sCode)) {
+                currentPartySelection = currentPartySelection.filter(c => String(c) !== sCode);
+            } else {
+                currentPartySelection.push(sCode);
+            }
+        }
+
+        window.addEventListener('load', () => {
+            const searchInput = document.getElementById('partySearch');
+            if (searchInput) searchInput.addEventListener('input', (e) => {
+                renderPartyList(e.target.value);
+            });
+        });
+
+        window.addEventListener('load', () => {
+            const selectAll = document.getElementById('partySelectAll');
+            if (selectAll) selectAll.onclick = (e) => {
+                e.preventDefault();
+                const filter = document.getElementById('partySearch').value.toLowerCase();
+                // Only select visible
+                const visible = allAvailableParties.filter(p => p.Name.toLowerCase().includes(filter));
+                visible.forEach(p => {
+                    const sCode = String(p.Code);
+                    if (!currentPartySelection.includes(sCode)) currentPartySelection.push(sCode);
+                });
+                renderPartyList(filter);
+            };
+
+            const deselectAll = document.getElementById('partyDeselectAll');
+            if (deselectAll) deselectAll.onclick = (e) => {
+                e.preventDefault();
+                currentPartySelection = [];
+                renderPartyList(document.getElementById('partySearch').value);
+            }
+        });
+
+        window.addEventListener('load', () => {
+            const saveBtn = document.getElementById('partyModalSave');
+            if (saveBtn) saveBtn.onclick = () => {
+                document.getElementById('partyModal').classList.remove('active');
+                updatePartyBadge();
+            };
+        });
+
+
+        document.getElementById('btnSaveBusyConfig').onclick = async () => {
+            if (!activeFirmId) { showToast("Please select or add a plan first.", 'warning'); return; }
+
+            const firmName = document.getElementById('confFirmName').value || "Unnamed Plan";
+            const dbPath = document.getElementById('confDbPath').value;
+
+            // --- Determine Targets ---
+            // 1. Root Group
+            let finalTargetGroup = groupSelect.value;
+            // 2. Sub Group (if selected)
+            if (subGroupSelect.value) {
+                const opt = subGroupSelect.options[subGroupSelect.selectedIndex];
+                finalTargetGroup = opt.dataset.name || opt.text;
+            }
+
+            // 3. Specific Parties (FROM GLOBAL SELECTION)
+            const specificParties = currentPartySelection;
+
+            // Database Params
+            const dbType = document.getElementById('confDbType').value;
+            let finalDbPath = "";
+            let dbPass = "";
+
+            if (dbType === 'MSSQL') {
+                finalDbPath = document.getElementById('confDbName').value; // In MSSQL mode, dbPath = Database Name
+                // Check if user entered a new password, else keep existing (handled by not sending if empty? No, backend needs it. 
+                // Actually backend usually overwrites. If font-end password field is empty, we might want to keep old one?
+                // For simplicity, if empty and we have an active firm, maybe we should fetch old one?
+                // Security risk to send back to UI. 
+                // Let's assume user re-enters or we just send what is there.
+                // Current implementation sends even if empty string. 
+                // Let's grab value.
+                dbPass = document.getElementById('confDbPass').value;
+            } else {
+                finalDbPath = document.getElementById('confDbPath').value;
+                // Access Password logic if we ever add it back to UI. For now hardcoded in backend fallback or hidden field? 
+                // Existing logic: dbPassword: "ILoveMyINDIA" default.
+                // If we want to allow user to set Access Password, we need UI for it.
+                // Current plan removed "DbPassword" from Access UI group. 
+                // We'll trust backend default or if user uses MSSQL field? No, separated.
+            }
+
+            // Allow MSSQL Password
+            const dbServer = document.getElementById('confDbServer').value;
+            const dbUser = document.getElementById('confDbUser').value;
+            if (dbType === 'MSSQL') dbPass = document.getElementById('confDbPass').value;
+
+            // Schedule
+            const timeVal = document.getElementById('confSchedTime').value || "10:00";
+            const [hh, mm] = timeVal.split(':').map(Number);
+            const freq = document.getElementById('confSchedFreq').value;
+            const dow = document.getElementById('confSchedDay').value;
+            const dom = document.getElementById('confSchedDate').value;
+            let cronStr = `0 ${mm} ${hh} * * *`;
+            if (freq === 'weekly') cronStr = `0 ${mm} ${hh} * * ${dow}`;
+            else if (freq === 'fortnightly') cronStr = `0 ${mm} ${hh} 1,15 * *`;
+            else if (freq === 'monthly') cronStr = `0 ${mm} ${hh} ${dom} * *`;
+
+            const reminderType = document.querySelector('input[name="reminderType"]:checked').value;
+            const dueDayBasis = document.querySelector('input[name="dueDayBasis"]:checked').value;
+            const whatsappClientId = document.getElementById('confWhatsappClientId').value;
+
+            const mcSelect = document.getElementById('confMaterialCenter');
+            const selectedMcCode = mcSelect ? mcSelect.value : "";
+            const selectedMcName = (mcSelect && mcSelect.selectedIndex >= 0 && selectedMcCode) 
+                ? mcSelect.options[mcSelect.selectedIndex].text 
+                : "";
+
+            const payload = {
+                id: activeFirmId,
+                data: {
+                    name: firmName,
+                    dbPath: dbPath,
+                    targetGroup: finalTargetGroup,
+                    specificParties: specificParties,
+                    scheduleEnabled: document.getElementById('confSchedEnabled').checked,
+                    scheduleCron: cronStr,
+                    reminderType: reminderType,
+                    dueDayBasis: dueDayBasis,
+                    whatsappClientId: whatsappClientId,
+                    dbType: dbType,
+                    dbServer: dbServer,
+                    dbUser: dbUser,
+                    dbName: document.getElementById('confDbName').value,
+                    dbPassword: dbPass,
+                    materialCenter: selectedMcCode,
+                    materialCenterName: selectedMcName,
+                    pdcEnabled: document.getElementById('confPdcEnabled').checked,
+                    pdcTime: document.getElementById('confPdcTime').value
+                }
+            }
+
+            try {
+                const res = await fetch(`${BUSY_API}/firms/update`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast("Plan Saved Successfully!", 'success');
+                    await loadBusyConfig();
+                    switchFirm(activeFirmId);
+                } else {
+                    showToast("Save Failed: " + data.error, 'error');
+                }
+            } catch (e) {
+                console.error("Save Failed:", e);
+                showToast("Save Failed: " + e.message, 'error');
+            }
+        };
+
+        // Global Delete Plan Function
+        async function deleteActivePlan() {
+            if (!activeFirmId) return;
+            if (!await showConfirm('Delete Plan?', 'Are you sure you want to delete this schedule plan? This cannot be undone.')) return;
+            try {
+                const res = await fetch(`${BUSY_API}/firms/delete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: activeFirmId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    activeFirmId = null;
+                    document.getElementById('planConfigArea').style.display = 'none';
+                    await loadBusyConfig();
+                    if (currentFirms.length > 0) switchFirm(currentFirms[0].id);
+                }
+            } catch (e) { showToast("Delete failed", 'error'); }
+        }
+
+        document.getElementById('btnTriggerSchedNow').onclick = async () => {
+            if (!activeFirmId) { showToast("Please select or add a plan first.", 'warning'); return; }
+            try {
+                const res = await fetch(`${BUSY_API}/trigger`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ firmId: activeFirmId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast("Workflow Started!", 'success');
+                } else {
+                    showToast("Workflow Start Failed: " + data.error, 'error');
+                }
+            } catch (e) {
+                console.error("Trigger schedule now failed:", e);
+                showToast("Workflow Start Failed: " + e.message, 'error');
+            }
+        };
+
+        async function triggerPdcNow() {
+            if (!activeFirmId) { showToast("Please select or add a plan first.", 'warning'); return; }
+            const btn = document.getElementById('btnTriggerPdcNow');
+            const original = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = "⏳ Running PDC check...";
+            
+            try {
+                const res = await fetch(`${BUSY_API}/trigger-pdc`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ firmId: activeFirmId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`PDC Check Complete! Found ${data.chequesFound || 0} cheques. Sent ${data.messagesSent || 0} alerts.`, 'success');
+                } else {
+                    showToast("PDC Trigger Failed: " + data.error, 'error');
+                }
+            } catch (e) {
+                console.error("Trigger PDC failed:", e);
+                showToast("PDC Trigger Failed: " + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = original;
+            }
+        }
+
+        document.getElementById('confSchedFreq').onchange = (e) => {
+            document.getElementById('weeklyDayGroup').style.display = e.target.value === 'weekly' ? 'block' : 'none';
+            document.getElementById('monthlyDayGroup').style.display = e.target.value === 'monthly' ? 'block' : 'none';
+            updateNextRunDisplay();
+        };
+
+        // Legacy initialization removed in favor of robust window.load
+        // Close Panel Button Logic
+        // Global Close Panel Function
+        function closePlanPanel() {
+            document.getElementById('planConfigArea').style.display = 'none';
+            activeFirmId = null;
+            document.querySelectorAll('.firm-pill').forEach(p => p.classList.remove('active'));
+        }
+
+        setInterval(updateNextRunDisplay, 60000);
+
+        function toggleDbFields() {
+            const type = document.getElementById('confDbType').value;
+            if (type === 'MSSQL') {
+                document.getElementById('dbAccessGroup').style.display = 'none';
+                document.getElementById('dbMssqlGroup').style.display = 'block';
+            } else {
+                document.getElementById('dbAccessGroup').style.display = 'block';
+                document.getElementById('dbMssqlGroup').style.display = 'none';
+            }
+        }
+
+        async function loadMaterialCenters(firm) {
+            const mcSelect = document.getElementById('confMaterialCenter');
+            if (!mcSelect) return;
+            mcSelect.innerHTML = '<option value="">Loading Material Centers...</option>';
+            try {
+                const res = await fetch(`${BUSY_API}/material-centers`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        firmId: firm.id,
+                        dbPath: firm.dbPath,
+                        dbPassword: firm.dbPassword,
+                        dbType: firm.dbType
+                    })
+                });
+                const data = await res.json();
+                mcSelect.innerHTML = '<option value="">(All MC)</option>';
+                if (data.success && Array.isArray(data.materialCenters)) {
+                    data.materialCenters.forEach(mc => {
+                        const opt = document.createElement('option');
+                        opt.value = mc.Code;
+                        opt.textContent = mc.Name;
+                        if (String(firm.materialCenter || "") === String(mc.Code)) {
+                            opt.selected = true;
+                        }
+                        mcSelect.appendChild(opt);
+                    });
+                }
+            } catch (e) {
+                console.error("Error loading Material Centers:", e);
+                mcSelect.innerHTML = '<option value="">(All MC)</option>';
+            }
+        }
+    </script>
+
+    <div id="confirmModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="confirmTitle" style="margin-top: 0;">Confirm Action</h3>
+            <p id="confirmMessage" style="color: var(--text-secondary); line-height: 1.5;"></p>
+            <div class="modal-footer">
+                <button id="confirmCancel" class="secondary btn-pill">Cancel</button>
+                <button id="confirmOk" class="btn-pill">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Party Selection Modal -->
+    <div id="partyModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 500px; height: 80vh; display:flex; flex-direction:column;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="margin:0;">Select Specific Parties</h3>
+                <button id="partyModalClose"
+                    style="background:none; border:none; font-size:20px; color:var(--text-secondary); cursor:pointer;">&times;</button>
+            </div>
+
+            <div style="margin-bottom:10px;">
+                <input type="text" id="partySearch" placeholder="Search accounts..."
+                    style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border-color);">
+            </div>
+
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:12px;">
+                <span id="partyCountDisplay">Loading...</span>
+                <div>
+                    <a href="#" id="partySelectAll" style="color:var(--primary); margin-right:10px;">Select All</a>
+                    <a href="#" id="partyDeselectAll" style="color:var(--text-secondary);">None</a>
+                </div>
+            </div>
+
+            <div id="partyList"
+                style="flex:1; overflow-y:auto; border:1px solid var(--border-color); border-radius:8px; padding:10px;">
+                <!-- Items populated via JS -->
+                <div style="text-align:center; padding:20px; color:var(--text-muted);">Select a group and click 'Select
+                    Parties'</div>
+            </div>
+
+            <div class="modal-footer" style="margin-top:15px;">
+                <button id="partyModalSave" class="btn-pill" style="width: 100%; justify-content: center;">Done</button>
+            </div>
+        </div>
+    </div>
+    <!-- Batch Stock MC Group Modal -->
+    <div id="bsGroupModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 500px; height: 80vh; display:flex; flex-direction:column;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="margin:0;">Select MC Groups</h3>
+                <button id="bsGroupModalClose" style="background:none; border:none; font-size:20px; color:var(--text-secondary); cursor:pointer;">&times;</button>
+            </div>
+            <div style="margin-bottom:10px;">
+                <input type="text" id="bsGroupSearch" placeholder="Search groups..." style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border-color);">
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:12px;">
+                <span id="bsGroupCountDisplay">Loading...</span>
+                <div>
+                    <a href="#" id="bsGroupSelectAll" style="color:var(--primary); margin-right:10px;">Select All</a>
+                    <a href="#" id="bsGroupDeselectAll" style="color:var(--text-secondary);">None</a>
+                </div>
+            </div>
+            <div id="bsGroupList" style="flex:1; overflow-y:auto; border:1px solid var(--border-color); border-radius:8px; padding:10px; margin-bottom: 15px;">
+                <!-- Items populated via JS -->
+            </div>
+            <button id="bsGroupModalSave" class="btn-pill" style="width: 100%; justify-content: center;">Done</button>
+        </div>
+    </div>
+
+    <!-- Batch Stock Material Centre Modal -->
+    <div id="bsMcModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 500px; height: 80vh; display:flex; flex-direction:column;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="margin:0;">Select Material Centres</h3>
+                <button id="bsMcModalClose" style="background:none; border:none; font-size:20px; color:var(--text-secondary); cursor:pointer;">&times;</button>
+            </div>
+            <div style="margin-bottom:10px;">
+                <input type="text" id="bsMcSearch" placeholder="Search Material Centres..." style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border-color);">
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:12px;">
+                <span id="bsMcCountDisplay">Loading...</span>
+                <div>
+                    <a href="#" id="bsMcSelectAll" style="color:var(--primary); margin-right:10px;">Select All</a>
+                    <a href="#" id="bsMcDeselectAll" style="color:var(--text-secondary);">None</a>
+                </div>
+            </div>
+            <div id="bsMcList" style="flex:1; overflow-y:auto; border:1px solid var(--border-color); border-radius:8px; padding:10px; margin-bottom: 15px;">
+                <!-- Items populated via JS -->
+            </div>
+            <button id="bsMcModalSave" class="btn-pill" style="width: 100%; justify-content: center;">Done</button>
+        </div>
+    </div>
+
+    <!-- Update Progress Modal -->
+    <div id="updateModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 480px; text-align: center; padding: 32px 24px; border-radius: 20px;">
+            <div style="font-size: 48px; margin-bottom: 16px;" id="updateModalIcon">🚀</div>
+            <h3 id="updateModalTitle" style="margin: 0 0 8px 0; font-size: 20px;">Updating WA Sender</h3>
+            <p id="updateModalMsg" style="color: var(--text-secondary); font-size: 14px; line-height: 1.5; margin-bottom: 20px;">
+                Downloading and applying update files. Please do not close this window...
+            </p>
+
+            <div class="update-progress-container">
+                <div id="updateModalProgressBar" class="update-progress-bar"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+                <span id="updateModalStep">Initializing...</span>
+                <span id="updateModalPct" style="font-weight: 700; color: var(--primary);">0%</span>
+            </div>
+
+            <div id="updateModalSuccessActions" style="margin-top: 24px; display: none;">
+                <button class="primary btn-pill" style="width: 100%; justify-content: center;" onclick="location.reload()">
+                    Reload Dashboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

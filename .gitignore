@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Local Configurations & Customer Secrets (NEVER PUSH TO GIT)
+busy_config.json
+config.json
+users.json
+client_names.json
+client_ports.json
+license.key
+
+# WhatsApp Sessions & Auth Caches (Contains Customer WhatsApp Logins)
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Local Database & Queue Logs
+logs.json
+queue.json
+*.log
+pdc_query.log
+server_error.log
+
+# Uploads & Media Files
+uploads/*
+!uploads/.gitkeep
+
+# Distribution & Build outputs
+dist/
+temp/
+temp_update/
+backup_pre_update/
+launcher/node_modules/
+
+# OS & Editor temporary files
+Thumbs.db
+*.TMP
+.DS_Store
+.vscode/
+.idea/

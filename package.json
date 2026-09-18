@@ -1,0 +1,47 @@
+{
+  "name": "whatsapp-client-server",
+  "version": "1.0.0",
+  "description": "WhatsApp Client Server with Web Interface",
+  "main": "server.js",
+  "bin": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "launcher": "cd launcher && npm install && npm start",
+    "generate-license": "node generate-license.js"
+  },
+  "keywords": [
+    "whatsapp",
+    "web",
+    "client"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "0.27.2",
+    "busboy": "^1.6.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "mdb-reader": "^3.1.0",
+    "mssql": "^12.2.0",
+    "node-adodb": "^5.0.3",
+    "node-cron": "^4.2.1",
+    "node-machine-id": "^1.1.12",
+    "qrcode": "^1.5.3",
+    "whatsapp-web.js": "github:pedroslopez/whatsapp-web.js#main",
+    "xlsx": "^0.18.5"
+  },
+  "pkg": {
+    "assets": [
+      "public/**/*",
+      "busy_db_bridge.ps1"
+    ],
+    "targets": [
+      "node18-win-x64"
+    ],
+    "outputPath": "dist"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.2"
+  }
+}
