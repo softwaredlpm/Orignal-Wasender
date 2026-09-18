@@ -907,7 +907,7 @@ input[type="file"]:hover::file-selector-button {
    Busy Automator - Clean & Neat UI Refinement
 =================================================== */
 .busy-layout-wrap {
-    max-width: 980px;
+    max-width: 100%;
     width: 100%;
     display: flex;
     flex-direction: column;
@@ -918,20 +918,22 @@ input[type="file"]:hover::file-selector-button {
     background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
     border: 1px solid var(--border-color);
     border-radius: 20px;
-    padding: 24px 28px;
+    padding: 26px 32px;
     box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    transition: all 0.2s ease;
-}
-
-.busy-hero-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 32px;
     flex-wrap: wrap;
-    gap: 16px;
+    transition: all 0.2s ease;
+}
+
+.busy-hero-left {
+    flex: 1;
+    min-width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .busy-hero-badge-group {
