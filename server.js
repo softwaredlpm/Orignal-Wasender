@@ -1,7 +1,14 @@
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 const express = require("express");
 const axios = require("axios");
-const { Client, LocalAuth, MessageMedia } = require("whatsapp-web.js");
+// Load bundled whatsapp-web.js from ./lib if available (contains all WhatsApp Web memoize & media fixes)
+let wwebjsModule;
+try {
+    wwebjsModule = require("./lib/whatsapp-web.js");
+} catch (e) {
+    wwebjsModule = require("whatsapp-web.js");
+}
+const { Client, LocalAuth, MessageMedia } = wwebjsModule;
 const qrcode = require("qrcode");
 const fs = require("fs");
 const path = require("path");
