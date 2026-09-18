@@ -4,16 +4,13 @@ const https = require('https');
 const http = require('http');
 const { spawn, exec } = require('child_process');
 
-// Obfuscated embedded token for private repository auto-updates
-const _UPD_AUTH = Buffer.from('Z2hwXzFUclNmcUNhaFpDSTNGUFBiS1hwNUtuS0dEQmREaTBEZ29jZw==', 'base64').toString('ascii');
-
 class AppUpdater {
     constructor(appDir, config = {}) {
         this.appDir = appDir;
         this.config = config;
         this.repo = config.github_repo || 'softwaredlpm/Orignal-Wasender';
         this.branch = config.github_branch || 'main';
-        this.githubToken = config.github_token || process.env.GITHUB_TOKEN || _UPD_AUTH;
+        this.githubToken = config.github_token || process.env.GITHUB_TOKEN || '';
 
         this.status = {
             state: 'idle', // 'idle', 'checking', 'available', 'downloading', 'extracting', 'applying', 'restarting', 'success', 'error'
@@ -93,7 +90,20 @@ class AppUpdater {
         return '';
     }
 
+    reloadConfig() {
+        try {
+            const cfgPath = path.join(this.appDir, 'config.json');
+            if (fs.existsSync(cfgPath)) {
+                const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+                if (cfg.github_repo) this.repo = cfg.github_repo;
+                if (cfg.github_branch) this.branch = cfg.github_branch;
+                if (cfg.github_token) this.githubToken = cfg.github_token;
+            }
+        } catch (e) { }
+    }
+
     getStatus() {
+        this.reloadConfig();
         this.status.currentVersion = this.getLocalVersion();
         this.status.installedCommit = this.getLocalCommit();
         return this.status;
@@ -259,6 +269,7 @@ class AppUpdater {
     }
 
     async checkForUpdates() {
+        this.reloadConfig();
         this.status.state = 'checking';
         this.status.message = 'Checking for updates...';
         this.status.error = null;
@@ -363,6 +374,7 @@ class AppUpdater {
     }
 
     async applyUpdate() {
+        this.reloadConfig();
         if (this.status.state === 'downloading' || this.status.state === 'applying') {
             throw new Error('Update is already in progress!');
         }
