@@ -4,13 +4,17 @@ const https = require('https');
 const http = require('http');
 const { spawn, exec } = require('child_process');
 
+const DEFAULT_REPO = 'softwaredlpm/Orignal-Wasender';
+const DEFAULT_BRANCH = 'main';
+const DEFAULT_GITHUB_TOKEN = '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';
+
 class AppUpdater {
     constructor(appDir, config = {}) {
         this.appDir = appDir;
         this.config = config;
-        this.repo = config.github_repo || 'softwaredlpm/Orignal-Wasender';
-        this.branch = config.github_branch || 'main';
-        this.githubToken = config.github_token || process.env.GITHUB_TOKEN || '';
+        this.repo = config.github_repo || DEFAULT_REPO;
+        this.branch = config.github_branch || DEFAULT_BRANCH;
+        this.githubToken = config.github_token || process.env.GITHUB_TOKEN || DEFAULT_GITHUB_TOKEN;
 
         this.status = {
             state: 'idle', // 'idle', 'checking', 'available', 'downloading', 'extracting', 'applying', 'restarting', 'success', 'error'
@@ -97,7 +101,11 @@ class AppUpdater {
                 const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
                 if (cfg.github_repo) this.repo = cfg.github_repo;
                 if (cfg.github_branch) this.branch = cfg.github_branch;
-                if (cfg.github_token) this.githubToken = cfg.github_token;
+                if (cfg.github_token) {
+                    this.githubToken = cfg.github_token;
+                } else if (!this.githubToken) {
+                    this.githubToken = DEFAULT_GITHUB_TOKEN;
+                }
             }
         } catch (e) { }
     }
