@@ -863,55 +863,136 @@
         </div>
         <!-- PAYMENT CONFIG TAB -->
         <div id="paymentconfig" class="tab-content">
-            <div class="header">
-                <h2>Payment Details Configuration</h2>
-            </div>
-            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">
-                These details will be automatically sent when a customer WhatsApps the word <strong>"PAYMENT"</strong> to your bot.
-            </p>
-            <div class="glass-card" style="max-width: 800px;">
-                <div style="margin-bottom: 20px;">
-                    <label class="form-label">Select Firm</label>
-                    <select id="payFirmSelect" class="form-input">
-                        <option value="">Loading Firms...</option>
-                    </select>
+            <div class="header" style="margin-bottom: 24px;">
+                <h2>
+                    <span style="color: #2563eb;">💳</span> Payment Details Configuration
+                </h2>
+                <div class="badge-status-pill" style="background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8;">
+                    <span>⚡</span> Auto-Responder Active
                 </div>
-                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">
-                <form id="paymentConfigForm" style="display:flex; flex-direction:column; gap:15px;">
-                    <div>
-                        <label>Bank Name</label>
-                        <input type="text" id="payBankName" placeholder="e.g. HDFC Bank" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+            </div>
+
+            <div class="busy-layout-wrap">
+                <!-- Info Banner Card -->
+                <div class="busy-hero-card" style="border-left: 5px solid #2563eb; padding: 22px 28px;">
+                    <div class="busy-hero-left">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 20px;">💬</span>
+                            <span style="font-weight: 700; font-size: 15px; color: var(--text);">Instant WhatsApp Payment Assistant</span>
+                        </div>
+                        <p class="busy-hero-desc">
+                            Configure your business banking and UPI details. When any customer sends the keyword <strong style="color: #2563eb; background: #eff6ff; padding: 2px 8px; border-radius: 6px;">"PAYMENT"</strong>, your bot will automatically reply with these bank details and a QR code.
+                        </p>
                     </div>
-                    <div>
-                        <label>Account Name</label>
-                        <input type="text" id="payAccountName" placeholder="e.g. ABC Traders" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+                </div>
+
+                <!-- Firm Selector Bar -->
+                <div class="plans-nav-card" style="display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div class="plan-title-icon" style="background: #eff6ff; color: #2563eb;">🏢</div>
+                        <div>
+                            <div style="font-size: 14px; font-weight: 700; color: var(--text);">Select Company / Firm</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">Choose which business profile these payment details belong to</div>
+                        </div>
                     </div>
-                    <div>
-                        <label>Account Number</label>
-                        <input type="text" id="payAccountNumber" placeholder="e.g. 50200012345678" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <div style="min-width: 280px;">
+                        <select id="payFirmSelect" style="padding: 10px 16px; font-size: 14px; font-weight: 600; border-radius: 12px; border: 1.5px solid var(--border-color); background: #ffffff;">
+                            <option value="">Loading Firms...</option>
+                        </select>
                     </div>
-                    <div>
-                        <label>IFSC Code</label>
-                        <input type="text" id="payIfscCode" placeholder="e.g. HDFC0001234" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+                </div>
+
+                <!-- Main Form with Two-Column Grid -->
+                <form id="paymentConfigForm">
+                    <div class="grid-2" style="align-items: stretch; gap: 24px;">
+                        <!-- Column 1: Bank Account Details -->
+                        <div class="config-subcard" style="background: #ffffff; padding: 24px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border-color);">
+                                    <div style="width: 36px; height: 36px; border-radius: 10px; background: #eff6ff; display: flex; align-items: center; justify-content: center; font-size: 18px;">🏛️</div>
+                                    <div>
+                                        <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text);">Bank Account Details</h4>
+                                        <span style="font-size: 12px; color: var(--text-muted);">For Direct Bank Transfer (NEFT / RTGS / IMPS)</span>
+                                    </div>
+                                </div>
+
+                                <div class="grid-2" style="gap: 16px; margin-bottom: 16px;">
+                                    <div>
+                                        <label style="font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">Bank Name</label>
+                                        <input type="text" id="payBankName" placeholder="e.g. HDFC Bank">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">Account Holder Name</label>
+                                        <input type="text" id="payAccountName" placeholder="e.g. ABC Traders">
+                                    </div>
+                                </div>
+
+                                <div class="grid-2" style="gap: 16px; margin-bottom: 16px;">
+                                    <div>
+                                        <label style="font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">Account Number</label>
+                                        <input type="text" id="payAccountNumber" placeholder="e.g. 50200012345678">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">IFSC Code</label>
+                                        <input type="text" id="payIfscCode" placeholder="e.g. HDFC0001234" style="text-transform: uppercase;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 14px; margin-top: 10px; display: flex; align-items: flex-start; gap: 10px;">
+                                <span style="font-size: 16px;">💡</span>
+                                <span style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+                                    These bank details will be neatly formatted and forwarded in the WhatsApp chat response whenever requested.
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Column 2: UPI & QR Code Settings -->
+                        <div class="config-subcard" style="background: #ffffff; padding: 24px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border-color);">
+                                    <div style="width: 36px; height: 36px; border-radius: 10px; background: #ecfdf5; display: flex; align-items: center; justify-content: center; font-size: 18px;">📱</div>
+                                    <div>
+                                        <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text);">UPI & Instant Payments</h4>
+                                        <span style="font-size: 12px; color: var(--text-muted);">For QR code scanning & UPI mobile payments</span>
+                                    </div>
+                                </div>
+
+                                <div class="grid-2" style="gap: 16px; margin-bottom: 16px;">
+                                    <div>
+                                        <label style="font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">UPI ID / VPA</label>
+                                        <input type="text" id="payUpiId" placeholder="e.g. yourbusiness@upi">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">Registered UPI Mobile</label>
+                                        <input type="text" id="payPhone" placeholder="e.g. 9876543210">
+                                    </div>
+                                </div>
+
+                                <div style="background: #f8fafc; border: 1.5px solid var(--border-color); border-radius: 14px; padding: 18px; margin-top: 10px;">
+                                    <label style="font-size: 13px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                        <span>📷</span> Custom Payment QR Code <span style="font-weight: 500; font-size: 11.5px; color: var(--text-muted);">(Optional)</span>
+                                    </label>
+                                    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4;">
+                                        If left blank and a UPI ID is provided, the system will auto-generate the official QR Code dynamically.
+                                    </p>
+                                    <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                                        <input type="file" id="payQrImage" accept="image/*" style="width: auto; font-size: 13px;">
+                                        <div id="payQrPreview" style="font-size: 12.5px; font-weight: 600; color: #10b981;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 14px; text-align: right;">
+                                <span style="font-size: 12px; color: var(--text-muted);">Supports PNG, JPG, or SVG static & dynamic QR codes</span>
+                            </div>
+                        </div>
                     </div>
-                    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 10px 0;">
-                    <div>
-                        <label>UPI ID</label>
-                        <input type="text" id="payUpiId" placeholder="e.g. yourbusiness@upi" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
-                    </div>
-                    <div>
-                        <label>Phone Number (UPI)</label>
-                        <input type="text" id="payPhone" placeholder="e.g. 9876543210" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
-                    </div>
-                    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 10px 0;">
-                    <div>
-                        <label>Upload Custom QR Code (Optional)</label><br>
-                        <span style="font-size: 11px; color: var(--text-secondary);">If left blank and a UPI ID is provided, the system will auto-generate the QR Code for you.</span><br>
-                        <input type="file" id="payQrImage" accept="image/*" style="margin-top: 5px;">
-                        <div id="payQrPreview" style="margin-top: 10px; font-size: 12px; color: var(--success);"></div>
-                    </div>
-                    
-                    <button type="button" class="btn-primary" onclick="savePaymentConfig()" style="margin-top: 10px;">Save Payment Details</button>
+
+                    <!-- Bottom Action Button -->
+                    <button type="button" class="btn-save-plan" onclick="savePaymentConfig()" style="margin-top: 24px;">
+                        <span>💾</span> Save Payment Details
+                    </button>
                 </form>
             </div>
         </div>
