@@ -49,6 +49,12 @@ process.on('uncaughtException', (err) => {
 });
 
 process.on('unhandledRejection', (reason, promise) => {
+    const reasonStr = reason ? (reason.message || String(reason)) : '';
+    // Ignore normal Puppeteer teardown artifacts during disconnect or reconnect
+    if (reasonStr.includes('detached Frame') || reasonStr.includes('Target closed') || reasonStr.includes('Session closed')) {
+        return;
+    }
+
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
     try {
         const timestamp = new Date().toISOString();
@@ -3646,7 +3652,8 @@ async function reconnectClient(clientId) {
     setTimeout(() => {
         if (!clientsClearingSession.has(clientId)) {
             console.log(`🔄 Creating fresh WhatsApp client instance for '${clientName}' (${clientId})...`);
-            const freshInfo = createClientInstance(clientId, clientName, assignedPort);
+            clients.delete(clientId);
+            const freshInfo = getOrCreateClient(clientId, clientName);
             freshInfo.status = "authenticating";
             freshInfo.client.initialize().catch(err => {
                 console.error(`[Self-Healing] Re-initialization failed for ${clientId}:`, err.message);

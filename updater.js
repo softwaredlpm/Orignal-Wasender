@@ -241,10 +241,15 @@ class AppUpdater {
                 throw new Error(`Could not fetch branch commits: ${commitErr.message}`);
             }
         } catch (err) {
-            this.status.state = 'error';
+            this.status.state = 'idle';
             this.status.error = err.message;
-            this.status.message = `Check failed: ${err.message}`;
-            console.error('[Updater] Error during update check:', err.message);
+            if (err.message.includes('404')) {
+                this.status.message = 'Repository is private or no release found';
+                console.log('ℹ️ [Updater] GitHub repository is private or not reachable. Update check skipped.');
+            } else {
+                this.status.message = `Update check skipped: ${err.message}`;
+                console.log(`ℹ️ [Updater] Update check skipped: ${err.message}`);
+            }
             return this.status;
         }
     }
