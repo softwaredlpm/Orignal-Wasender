@@ -1671,7 +1671,15 @@ async function checkSystemUpdate(isManual = false) {
         const data = await res.json();
 
         if (currentVerEl) currentVerEl.textContent = data.currentVersion || '1.0.0';
-        if (latestVerEl) latestVerEl.textContent = data.latestVersion || data.currentVersion || '1.0.0';
+        if (latestVerEl) {
+            if (data.latestVersion) {
+                latestVerEl.textContent = 'v' + data.latestVersion + (data.commitHash ? ` (${data.commitHash})` : '');
+            } else if (data.error || (data.message && data.message.includes('private'))) {
+                latestVerEl.textContent = 'Notice (See Below)';
+            } else {
+                latestVerEl.textContent = 'v' + (data.currentVersion || '1.0.0');
+            }
+        }
         if (updateBadge) updateBadge.textContent = 'v' + (data.currentVersion || '1.0.0');
         if (lastCheckedEl) lastCheckedEl.textContent = new Date().toLocaleTimeString();
 
@@ -1694,6 +1702,15 @@ async function checkSystemUpdate(isManual = false) {
                 banner.style.display = 'flex';
                 if (bannerTitle) bannerTitle.textContent = `New Update Available: v${data.latestVersion || 'Latest'}`;
                 if (bannerDesc) bannerDesc.textContent = data.commitMessage || 'A new version of WA Sender is ready to install.';
+            }
+        } else if (data.error || (data.message && data.message.includes('private'))) {
+            if (performBtn) performBtn.style.display = 'none';
+            if (feedbackEl && isManual) {
+                feedbackEl.style.display = 'block';
+                feedbackEl.style.background = '#fffbeb';
+                feedbackEl.style.color = '#b45309';
+                feedbackEl.style.border = '1px solid #fde68a';
+                feedbackEl.innerHTML = `⚠️ <strong>Update Notice:</strong> ${data.message || data.error}`;
             }
         } else {
             if (performBtn) performBtn.style.display = 'none';

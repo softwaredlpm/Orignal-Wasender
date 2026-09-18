@@ -30,6 +30,8 @@ dist/
 temp/
 temp_update/
 backup_pre_update/
+backup_previous_version/
+.installed_commit
 launcher/node_modules/
 
 # OS & Editor temporary files

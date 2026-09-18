@@ -18,6 +18,7 @@ class AppUpdater {
             progress: 0,
             lastChecked: null,
             currentVersion: this.getLocalVersion(),
+            installedCommit: this.getLocalCommit(),
             latestVersion: null,
             commitMessage: null,
             commitHash: null,
@@ -59,18 +60,68 @@ class AppUpdater {
         return '1.0.0';
     }
 
+    getLocalCommit() {
+        const commitTrackerFile = path.join(this.appDir, '.installed_commit');
+        if (fs.existsSync(commitTrackerFile)) {
+            try {
+                return fs.readFileSync(commitTrackerFile, 'utf8').trim();
+            } catch (e) { }
+        }
+        try {
+            const gitHeadRefPath = path.join(this.appDir, '.git', 'refs', 'heads', this.branch);
+            if (fs.existsSync(gitHeadRefPath)) {
+                const c = fs.readFileSync(gitHeadRefPath, 'utf8').trim().substring(0, 7);
+                fs.writeFileSync(commitTrackerFile, c, 'utf8');
+                return c;
+            }
+            const gitHeadPath = path.join(this.appDir, '.git', 'HEAD');
+            if (fs.existsSync(gitHeadPath)) {
+                const headContent = fs.readFileSync(gitHeadPath, 'utf8').trim();
+                let c = '';
+                if (headContent.startsWith('ref:')) {
+                    const refRelPath = headContent.replace(/^ref:\s*/, '').trim();
+                    const refFullPath = path.join(this.appDir, '.git', refRelPath);
+                    if (fs.existsSync(refFullPath)) {
+                        c = fs.readFileSync(refFullPath, 'utf8').trim().substring(0, 7);
+                    }
+                } else {
+                    c = headContent.substring(0, 7);
+                }
+                if (c) {
+                    fs.writeFileSync(commitTrackerFile, c, 'utf8');
+                    return c;
+                }
+            }
+        } catch (e) { }
+        return '';
+    }
+
     getStatus() {
         this.status.currentVersion = this.getLocalVersion();
+        this.status.installedCommit = this.getLocalCommit();
         return this.status;
     }
 
-    getHeaders() {
+    getHeaders(targetUrl = '', customHeaders = {}) {
         const headers = {
             'User-Agent': 'WA-Sender-Updater/1.0',
-            'Accept': 'application/vnd.github.v3+json'
+            'Accept': 'application/vnd.github.v3+json',
+            ...customHeaders
         };
         if (this.githubToken) {
-            headers['Authorization'] = `token ${this.githubToken}`;
+            let includeAuth = true;
+            if (targetUrl) {
+                try {
+                    const host = new URL(targetUrl).hostname;
+                    // S3 and codeload.github.com signed URLs fail with 400 if Authorization header is forwarded
+                    if (host.includes('codeload.github.com') || host.includes('amazonaws.com')) {
+                        includeAuth = false;
+                    }
+                } catch (e) { }
+            }
+            if (includeAuth) {
+                headers['Authorization'] = `token ${this.githubToken}`;
+            }
         }
         return headers;
     }
@@ -78,7 +129,7 @@ class AppUpdater {
     async request(url, customHeaders = {}) {
         return new Promise((resolve, reject) => {
             const client = url.startsWith('https') ? https : http;
-            const headers = { ...this.getHeaders(), ...customHeaders };
+            const headers = this.getHeaders(url, customHeaders);
 
             const req = client.get(url, { headers }, (res) => {
                 // Follow redirects
@@ -105,14 +156,14 @@ class AppUpdater {
         });
     }
 
-    async downloadFile(url, destPath, onProgress) {
+    async downloadFile(url, destPath, onProgress, customHeaders = {}) {
         return new Promise((resolve, reject) => {
             const client = url.startsWith('https') ? https : http;
-            const headers = this.getHeaders();
+            const headers = this.getHeaders(url, customHeaders);
 
             const req = client.get(url, { headers }, (res) => {
                 if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-                    return resolve(this.downloadFile(res.headers.location, destPath, onProgress));
+                    return resolve(this.downloadFile(res.headers.location, destPath, onProgress, customHeaders));
                 }
 
                 if (res.statusCode !== 200) {
@@ -151,9 +202,14 @@ class AppUpdater {
         });
     }
 
+    cleanVersion(v) {
+        if (!v) return '0.0.0';
+        return String(v).trim().replace(/^[^0-9]*/, '');
+    }
+
     compareVersions(v1, v2) {
-        const p1 = (v1 || '0.0.0').split('.').map(Number);
-        const p2 = (v2 || '0.0.0').split('.').map(Number);
+        const p1 = this.cleanVersion(v1).split('.').map(Number);
+        const p2 = this.cleanVersion(v2).split('.').map(Number);
         for (let i = 0; i < 3; i++) {
             const a = p1[i] || 0;
             const b = p2[i] || 0;
@@ -161,6 +217,48 @@ class AppUpdater {
             if (a < b) return -1;
         }
         return 0;
+    }
+
+    async fetchDirectCommitFeed() {
+        try {
+            const atomUrl = `https://github.com/${this.repo}/commits/${this.branch}.atom`;
+            const atomRes = await this.request(atomUrl, { 'Accept': 'application/atom+xml, text/xml, */*' });
+            const match = atomRes.body.match(/<entry>[\s\S]*?<id>tag:github.com,2008:Grit::Commit\/([a-f0-9]+)<\/id>[\s\S]*?<title>([\s\S]*?)<\/title>[\s\S]*?<updated>(.*?)<\/updated>/);
+            if (match) {
+                const unescapeXml = (str) => str
+                    .replace(/&lt;/g, '<')
+                    .replace(/&gt;/g, '>')
+                    .replace(/&quot;/g, '"')
+                    .replace(/&amp;/g, '&')
+                    .replace(/&#(\d+);/g, (m, dec) => String.fromCharCode(dec));
+                return {
+                    sha: match[1].substring(0, 7),
+                    message: unescapeXml(match[2].trim()),
+                    date: match[3]
+                };
+            }
+        } catch (e) { }
+        return null;
+    }
+
+    async fetchRemotePackageVersion() {
+        try {
+            let rawPkgUrl = `https://raw.githubusercontent.com/${this.repo}/${this.branch}/package.json`;
+            if (this.githubToken) {
+                rawPkgUrl = `https://api.github.com/repos/${this.repo}/contents/package.json?ref=${this.branch}`;
+            }
+            const rawPkgRes = await this.request(rawPkgUrl);
+            let pkgJsonStr = rawPkgRes.body;
+            if (this.githubToken) {
+                const parsedContent = JSON.parse(rawPkgRes.body);
+                if (parsedContent.content) {
+                    pkgJsonStr = Buffer.from(parsedContent.content, 'base64').toString('utf8');
+                }
+            }
+            const remotePkg = JSON.parse(pkgJsonStr);
+            return remotePkg.version || null;
+        } catch (e) { }
+        return null;
     }
 
     async checkForUpdates() {
@@ -173,79 +271,92 @@ class AppUpdater {
             this.status.currentVersion = currentVersion;
             this.status.lastChecked = new Date().toISOString();
 
-            // Try 1: Check GitHub Releases
-            try {
-                const releaseRes = await this.request(`https://api.github.com/repos/${this.repo}/releases/latest`);
-                const release = JSON.parse(releaseRes.body);
-                const tagVersion = (release.tag_name || '').replace(/^v/, '');
-
-                if (tagVersion && this.compareVersions(tagVersion, currentVersion) > 0) {
-                    this.status.state = 'available';
-                    this.status.updateAvailable = true;
-                    this.status.latestVersion = tagVersion;
-                    this.status.commitMessage = release.name || release.body || 'New release available';
-                    this.status.publishedAt = release.published_at;
-                    this.status.message = `Update ${tagVersion} is available!`;
-                    return this.status;
-                }
-            } catch (relErr) {
-                // If no releases found, fall back to checking commits or package.json
-            }
-
-            // Try 2: Check latest commit on main branch
-            try {
-                const commitRes = await this.request(`https://api.github.com/repos/${this.repo}/commits/${this.branch}`);
-                const commitData = JSON.parse(commitRes.body);
-                const latestCommitHash = (commitData.sha || '').substring(0, 7);
-                const commitMsg = commitData.commit && commitData.commit.message ? commitData.commit.message.split('\n')[0] : '';
-                const commitDate = commitData.commit && commitData.commit.committer ? commitData.commit.committer.date : null;
-
-                // Try fetching remote package.json to see if remote version is higher
-                let remoteVersion = currentVersion;
+            // Try 1: Check GitHub Releases (if token is available or if rate limit isn't hit)
+            if (this.githubToken) {
                 try {
-                    const rawPkgRes = await this.request(`https://raw.githubusercontent.com/${this.repo}/${this.branch}/package.json`);
-                    const remotePkg = JSON.parse(rawPkgRes.body);
-                    if (remotePkg.version) {
-                        remoteVersion = remotePkg.version;
+                    const releaseRes = await this.request(`https://api.github.com/repos/${this.repo}/releases/latest`);
+                    const release = JSON.parse(releaseRes.body);
+                    const tagVersion = this.cleanVersion(release.tag_name || '');
+
+                    if (tagVersion && this.compareVersions(tagVersion, currentVersion) > 0) {
+                        this.status.state = 'available';
+                        this.status.updateAvailable = true;
+                        this.status.latestVersion = tagVersion;
+                        this.status.commitMessage = release.name || release.body || 'New release available';
+                        this.status.publishedAt = release.published_at;
+                        this.status.message = `Update ${tagVersion} is available!`;
+                        return this.status;
                     }
-                } catch (e) { }
-
-                const isVersionNewer = this.compareVersions(remoteVersion, currentVersion) > 0;
-                
-                // Read last installed commit if stored
-                const commitTrackerFile = path.join(this.appDir, '.installed_commit');
-                let installedCommit = '';
-                if (fs.existsSync(commitTrackerFile)) {
-                    installedCommit = fs.readFileSync(commitTrackerFile, 'utf8').trim();
+                } catch (relErr) {
+                    // Fall through to commit checking
                 }
-
-                const isNewCommit = latestCommitHash && installedCommit && latestCommitHash !== installedCommit;
-                const updateAvailable = isVersionNewer || (isNewCommit && !installedCommit.startsWith(latestCommitHash));
-
-                this.status.latestVersion = remoteVersion;
-                this.status.commitHash = latestCommitHash;
-                this.status.commitMessage = commitMsg;
-                this.status.publishedAt = commitDate;
-                this.status.updateAvailable = updateAvailable;
-
-                if (updateAvailable) {
-                    this.status.state = 'available';
-                    this.status.message = `Update available: ${remoteVersion} (${latestCommitHash})`;
-                } else {
-                    this.status.state = 'idle';
-                    this.status.message = 'Your software is up to date!';
-                }
-
-                return this.status;
-            } catch (commitErr) {
-                throw new Error(`Could not fetch branch commits: ${commitErr.message}`);
             }
+
+            // Try 2: Fetch latest commit & version using Direct Feeds (Bypasses GitHub API 60 req/hr rate limit)
+            let latestCommitHash = null;
+            let commitMsg = '';
+            let commitDate = null;
+
+            // Direct Atom feed avoids API rate limits completely
+            const directCommit = await this.fetchDirectCommitFeed();
+            if (directCommit) {
+                latestCommitHash = directCommit.sha;
+                commitMsg = directCommit.message;
+                commitDate = directCommit.date;
+            } else {
+                // Fallback to GitHub REST API if atom feed not reachable
+                try {
+                    const commitRes = await this.request(`https://api.github.com/repos/${this.repo}/commits/${this.branch}`);
+                    const commitData = JSON.parse(commitRes.body);
+                    latestCommitHash = (commitData.sha || '').substring(0, 7);
+                    commitMsg = commitData.commit && commitData.commit.message ? commitData.commit.message.split('\n')[0] : '';
+                    commitDate = commitData.commit && commitData.commit.committer ? commitData.commit.committer.date : null;
+                } catch (commitErr) {
+                    if (commitErr.message.includes('403') || commitErr.message.includes('rate limit')) {
+                        console.warn('[Updater] API rate limit hit, attempting Atom fallback...');
+                    } else {
+                        throw commitErr;
+                    }
+                }
+            }
+
+            // Fetch remote package.json version
+            let remoteVersion = currentVersion;
+            const fetchedRemoteVer = await this.fetchRemotePackageVersion();
+            if (fetchedRemoteVer) {
+                remoteVersion = fetchedRemoteVer;
+            }
+
+            const isVersionNewer = this.compareVersions(remoteVersion, currentVersion) > 0;
+            const installedCommit = this.getLocalCommit();
+
+            const isNewCommit = Boolean(latestCommitHash && installedCommit && latestCommitHash !== installedCommit);
+            const updateAvailable = isVersionNewer || (isNewCommit && !installedCommit.startsWith(latestCommitHash));
+
+            this.status.latestVersion = remoteVersion;
+            this.status.commitHash = latestCommitHash;
+            this.status.commitMessage = commitMsg;
+            this.status.publishedAt = commitDate;
+            this.status.updateAvailable = updateAvailable;
+
+            if (updateAvailable) {
+                this.status.state = 'available';
+                this.status.message = `Update available: ${remoteVersion} (${latestCommitHash || 'new'})`;
+            } else {
+                this.status.state = 'idle';
+                this.status.message = 'Your software is up to date!';
+            }
+
+            return this.status;
         } catch (err) {
             this.status.state = 'idle';
             this.status.error = err.message;
             if (err.message.includes('404')) {
-                this.status.message = 'Repository is private or no release found';
-                console.log('ℹ️ [Updater] GitHub repository is private or not reachable. Update check skipped.');
+                this.status.message = 'GitHub repository is private or not reachable. Make softwaredlpm/Orignal-Wasender public or configure github_token.';
+                console.log('ℹ️ [Updater] GitHub repository is private or not reachable. Make the repo public or configure github_token.');
+            } else if (err.message.includes('403') || err.message.includes('rate limit')) {
+                this.status.message = 'GitHub API rate limit exceeded. Please configure github_token in config.json or wait a few minutes.';
+                console.log('ℹ️ [Updater] GitHub rate limit exceeded. Add github_token to config.json for higher rate limits.');
             } else {
                 this.status.message = `Update check skipped: ${err.message}`;
                 console.log(`ℹ️ [Updater] Update check skipped: ${err.message}`);
@@ -272,8 +383,11 @@ class AppUpdater {
             if (fs.existsSync(tempDir)) fs.rmSync(tempDir, { recursive: true, force: true });
             if (fs.existsSync(zipFile)) fs.unlinkSync(zipFile);
 
-            // 1. Download repository zip
-            const zipUrl = `https://github.com/${this.repo}/archive/refs/heads/${this.branch}.zip`;
+            // 1. Download repository zip (use GitHub API zipball endpoint if authenticated to support private repos)
+            let zipUrl = `https://github.com/${this.repo}/archive/refs/heads/${this.branch}.zip`;
+            if (this.githubToken) {
+                zipUrl = `https://api.github.com/repos/${this.repo}/zipball/${this.branch}`;
+            }
             console.log(`[Updater] Downloading zip from ${zipUrl}...`);
 
             await this.downloadFile(zipUrl, zipFile, (pct) => {
@@ -298,7 +412,7 @@ class AppUpdater {
             this.status.progress = 70;
             this.status.message = 'Backing up configuration and applying files...';
 
-            // Find extracted inner directory (GitHub zips root as <RepoName>-<branch>)
+            // Find extracted inner directory (GitHub zips root as <RepoName>-<branch> or <user>-<repo>-<hash>)
             const extractedItems = fs.readdirSync(tempDir);
             let sourceRoot = tempDir;
             if (extractedItems.length === 1 && fs.statSync(path.join(tempDir, extractedItems[0])).isDirectory()) {
@@ -386,8 +500,10 @@ class AppUpdater {
 
     scheduleServerRestart() {
         console.log('[Updater] Scheduling detached server restart...');
-        // Create an autonomous restart batch script that waits, releases port 5000, and restarts server
         const restartScriptPath = path.join(this.appDir, 'restart_after_update.bat');
+        const isPkg = Boolean(process.pkg);
+        const startCommand = isPkg ? `start "" "${process.execPath}"` : 'start "WA Sender Server" node server.js';
+
         const scriptContent = `@echo off
 timeout /t 2 /nobreak >nul
 echo [Auto-Updater] Releasing port 5000...
@@ -395,7 +511,7 @@ for /f "tokens=5" %%a in ('netstat -ano ^| findstr :5000') do taskkill /PID %%a 
 timeout /t 1 /nobreak >nul
 echo [Auto-Updater] Starting updated WA Sender...
 cd /d "%~dp0"
-start "WA Sender Server" node server.js
+${startCommand}
 exit
 `;
         fs.writeFileSync(restartScriptPath, scriptContent, 'utf8');
