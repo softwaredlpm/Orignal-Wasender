@@ -4,17 +4,13 @@ const https = require('https');
 const http = require('http');
 const { spawn, exec } = require('child_process');
 
-const DEFAULT_REPO = 'softwaredlpm/Orignal-Wasender';
-const DEFAULT_BRANCH = 'main';
-const DEFAULT_GITHUB_TOKEN = '';
-
 class AppUpdater {
     constructor(appDir, config = {}) {
         this.appDir = appDir;
         this.config = config;
-        this.repo = config.github_repo || DEFAULT_REPO;
-        this.branch = config.github_branch || DEFAULT_BRANCH;
-        this.githubToken = config.github_token || process.env.GITHUB_TOKEN || DEFAULT_GITHUB_TOKEN || '';
+        this.repo = config.github_repo || 'softwaredlpm/Orignal-Wasender';
+        this.branch = config.github_branch || 'main';
+        this.githubToken = config.github_token || process.env.GITHUB_TOKEN || '';
 
         this.status = {
             state: 'idle', // 'idle', 'checking', 'available', 'downloading', 'extracting', 'applying', 'restarting', 'success', 'error'
@@ -94,20 +90,7 @@ class AppUpdater {
         return '';
     }
 
-    reloadConfig() {
-        try {
-            const cfgPath = path.join(this.appDir, 'config.json');
-            if (fs.existsSync(cfgPath)) {
-                const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
-                if (cfg.github_repo) this.repo = cfg.github_repo;
-                if (cfg.github_branch) this.branch = cfg.github_branch;
-                this.githubToken = cfg.github_token || process.env.GITHUB_TOKEN || DEFAULT_GITHUB_TOKEN || '';
-            }
-        } catch (e) { }
-    }
-
     getStatus() {
-        this.reloadConfig();
         this.status.currentVersion = this.getLocalVersion();
         this.status.installedCommit = this.getLocalCommit();
         return this.status;
@@ -231,10 +214,6 @@ class AppUpdater {
     }
 
     async fetchDirectCommitFeed() {
-        if (this.githubToken) {
-            // Private repositories cannot serve public atom feeds; skip straight to authenticated GitHub API
-            return null;
-        }
         try {
             const atomUrl = `https://github.com/${this.repo}/commits/${this.branch}.atom?_t=${Date.now()}`;
             const atomRes = await this.request(atomUrl, { 'Accept': 'application/atom+xml, text/xml, */*' });
@@ -277,7 +256,6 @@ class AppUpdater {
     }
 
     async checkForUpdates() {
-        this.reloadConfig();
         this.status.state = 'checking';
         this.status.message = 'Checking for updates...';
         this.status.error = null;
@@ -382,7 +360,6 @@ class AppUpdater {
     }
 
     async applyUpdate() {
-        this.reloadConfig();
         if (this.status.state === 'downloading' || this.status.state === 'applying') {
             throw new Error('Update is already in progress!');
         }
