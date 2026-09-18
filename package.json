@@ -28,8 +28,9 @@
     "node-adodb": "^5.0.3",
     "node-cron": "^4.2.1",
     "node-machine-id": "^1.1.12",
+    "puppeteer": "24.38.0",
     "qrcode": "^1.5.3",
-    "whatsapp-web.js": "github:softwaredlpm/whatsapp-web.js#main",
+    "whatsapp-web.js": "file:./lib/whatsapp-web.js",
     "xlsx": "^0.18.5"
   },
   "pkg": {
