@@ -484,6 +484,24 @@ function getOrCreateClient(clientId, name = null) {
         }
         console.log(`✅ [${clientInfo.name}] WhatsApp authenticated`);
         addLog("success", `[${clientInfo.name}] WhatsApp authenticated`);
+
+        // Safety fallback: if ready event takes more than 15s after authenticated, poll client state
+        setTimeout(async () => {
+            if (!clientInfo.isReady && clientInstance.pupPage) {
+                try {
+                    const isSynced = await clientInstance.pupPage.evaluate(() => {
+                        return window.require?.('WAWebSocketModel')?.Socket?.hasSynced === true;
+                    }).catch(() => false);
+
+                    if (isSynced && !clientInfo.isReady) {
+                        console.log(`🔄 [${clientInfo.name}] Auto-sync verified! Transitioning to ready state.`);
+                        clientInfo.status = "ready";
+                        clientInfo.isReady = true;
+                        processQueue();
+                    }
+                } catch (e) {}
+            }
+        }, 15000);
     });
 
     clientInstance.on("auth_failure", (msg) => {
