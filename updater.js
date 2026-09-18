@@ -61,38 +61,32 @@ class AppUpdater {
     }
 
     getLocalCommit() {
+        try {
+            const gitHeadRefPath = path.join(this.appDir, '.git', 'refs', 'heads', this.branch);
+            if (fs.existsSync(gitHeadRefPath)) {
+                return fs.readFileSync(gitHeadRefPath, 'utf8').trim().substring(0, 7);
+            }
+            const gitHeadPath = path.join(this.appDir, '.git', 'HEAD');
+            if (fs.existsSync(gitHeadPath)) {
+                const headContent = fs.readFileSync(gitHeadPath, 'utf8').trim();
+                if (headContent.startsWith('ref:')) {
+                    const refRelPath = headContent.replace(/^ref:\s*/, '').trim();
+                    const refFullPath = path.join(this.appDir, '.git', refRelPath);
+                    if (fs.existsSync(refFullPath)) {
+                        return fs.readFileSync(refFullPath, 'utf8').trim().substring(0, 7);
+                    }
+                } else if (headContent.length >= 7) {
+                    return headContent.substring(0, 7);
+                }
+            }
+        } catch (e) { }
+
         const commitTrackerFile = path.join(this.appDir, '.installed_commit');
         if (fs.existsSync(commitTrackerFile)) {
             try {
                 return fs.readFileSync(commitTrackerFile, 'utf8').trim();
             } catch (e) { }
         }
-        try {
-            const gitHeadRefPath = path.join(this.appDir, '.git', 'refs', 'heads', this.branch);
-            if (fs.existsSync(gitHeadRefPath)) {
-                const c = fs.readFileSync(gitHeadRefPath, 'utf8').trim().substring(0, 7);
-                fs.writeFileSync(commitTrackerFile, c, 'utf8');
-                return c;
-            }
-            const gitHeadPath = path.join(this.appDir, '.git', 'HEAD');
-            if (fs.existsSync(gitHeadPath)) {
-                const headContent = fs.readFileSync(gitHeadPath, 'utf8').trim();
-                let c = '';
-                if (headContent.startsWith('ref:')) {
-                    const refRelPath = headContent.replace(/^ref:\s*/, '').trim();
-                    const refFullPath = path.join(this.appDir, '.git', refRelPath);
-                    if (fs.existsSync(refFullPath)) {
-                        c = fs.readFileSync(refFullPath, 'utf8').trim().substring(0, 7);
-                    }
-                } else {
-                    c = headContent.substring(0, 7);
-                }
-                if (c) {
-                    fs.writeFileSync(commitTrackerFile, c, 'utf8');
-                    return c;
-                }
-            }
-        } catch (e) { }
         return '';
     }
 
