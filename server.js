@@ -1374,6 +1374,13 @@ if (messageQueue.some(j => j.status === 'processing')) {
     saveQueue(messageQueue);
 }
 
+// ==========================================
+// Mode B: Smart Account Load-Balancer & Batch Rotation
+// ==========================================
+const ROTATION_CHUNK_SIZE = 25; // Send 25 messages per SIM before rotating
+let rotationClientIndex = 0;
+let currentChunkSentCount = 0;
+
 async function processQueue() {
     if (processing || queuePaused) return;
     processing = true;
@@ -1592,11 +1599,35 @@ async function sendMessageJob(job) {
     // SAFETY: Randomize text hash (Invisible to user, unique to WhatsApp)
     const safeMessage = randomizeText(message);
 
-    const clientId = job.whatsappClientId || "default";
-    let clientInfo = clients.get(clientId);
+    const assignedClientId = job.whatsappClientId || "auto_rotate";
+    let clientInfo = null;
+
+    // Mode B: Smart Account Load-Balancer / Batch Rotation
+    if (assignedClientId === "auto_rotate" || assignedClientId === "rotate") {
+        const readyClients = [...clients.values()].filter(c => c.isReady);
+        if (readyClients.length === 0) {
+            throw new Error("No ready WhatsApp accounts connected for auto-rotation");
+        }
+
+        // If current SIM has sent ROTATION_CHUNK_SIZE (25 msgs), switch to next SIM
+        if (currentChunkSentCount >= ROTATION_CHUNK_SIZE) {
+            const previousClient = readyClients[rotationClientIndex % readyClients.length];
+            rotationClientIndex = (rotationClientIndex + 1) % readyClients.length;
+            currentChunkSentCount = 0;
+            const newClient = readyClients[rotationClientIndex];
+            console.log(`🔀 [Mode B: SIM Rotation] Chunk of ${ROTATION_CHUNK_SIZE} msgs completed on [${previousClient.name}]. Rotating to [${newClient.name}]!`);
+            addLog("info", `[SIM Rotation] Rotated sending account from [${previousClient.name}] to [${newClient.name}].`);
+        }
+
+        clientInfo = readyClients[rotationClientIndex % readyClients.length];
+        currentChunkSentCount++;
+        console.log(`📡 [Mode B: Load Balancer] Routing job via [${clientInfo.name}] (Msg ${currentChunkSentCount}/${ROTATION_CHUNK_SIZE} in chunk)`);
+    } else {
+        clientInfo = clients.get(assignedClientId);
+    }
 
     if (!clientInfo) {
-        throw new Error(`WhatsApp connection '${clientId}' not found`);
+        throw new Error(`WhatsApp connection '${assignedClientId}' not found`);
     }
 
     // FALLBACK: If assigned client is not ready, try any other ready client

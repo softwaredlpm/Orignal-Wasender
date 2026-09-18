@@ -1133,6 +1133,11 @@ async function hydrateBusyClientDropdown() {
         const currentValue = dropdown.value;
         dropdown.innerHTML = '';
 
+        const rotateOpt = document.createElement('option');
+        rotateOpt.value = 'auto_rotate';
+        rotateOpt.textContent = '🔀 Smart Auto-Rotate (Mode B: 25 msgs / SIM)';
+        dropdown.appendChild(rotateOpt);
+
         data.clients.forEach(c => {
             const opt = document.createElement('option');
             opt.value = c.id;
@@ -1169,6 +1174,11 @@ async function hydrateSendClientDropdowns() {
             if (!dropdown) return;
             const currentValue = dropdown.value;
             dropdown.innerHTML = '';
+
+            const rotateOpt = document.createElement('option');
+            rotateOpt.value = 'auto_rotate';
+            rotateOpt.textContent = '🔀 Smart Auto-Rotate (Mode B: 25 msgs / SIM)';
+            dropdown.appendChild(rotateOpt);
 
             data.clients.forEach(c => {
                 const opt = document.createElement('option');
