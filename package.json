@@ -29,7 +29,7 @@
     "node-cron": "^4.2.1",
     "node-machine-id": "^1.1.12",
     "qrcode": "^1.5.3",
-    "whatsapp-web.js": "github:pedroslopez/whatsapp-web.js#main",
+    "whatsapp-web.js": "github:softwaredlpm/whatsapp-web.js#main",
     "xlsx": "^0.18.5"
   },
   "pkg": {
