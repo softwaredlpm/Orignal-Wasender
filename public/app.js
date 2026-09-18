@@ -767,10 +767,14 @@ function initializeAccountsManager() {
     hydrateBusyClientDropdown();
 }
 
+window.allClientsCache = [];
+
 async function fetchAndRenderAccounts(keepSelection = true) {
     try {
         const data = await robustFetch('/clients');
         if (!data.success) return;
+
+        window.allClientsCache = data.clients || [];
 
         const listContainer = document.getElementById('accountsList');
         if (!listContainer) return;
@@ -806,8 +810,9 @@ async function fetchAndRenderAccounts(keepSelection = true) {
                 selectActiveAccount(c.id, c.name);
             });
 
-            const statusClass = c.status === 'ready' ? 'success' : (c.status === 'authenticating' ? 'warning' : 'error');
-            const displayStatus = c.status === 'ready' ? 'Connected' : (c.status === 'authenticating' ? 'Connecting/Scan QR' : 'Disconnected');
+            const isClientReady = c.ready === true || c.status === 'ready';
+            const statusClass = isClientReady ? 'success' : (c.status === 'authenticating' ? 'warning' : 'error');
+            const displayStatus = isClientReady ? 'Connected' : (c.status === 'authenticating' ? 'Connecting/Scan QR' : 'Disconnected');
             const displayNum = c.number ? ` (+${c.number})` : '';
             const portBadge = c.port ? `<span style="margin-left:6px; background:#eff6ff; color:#1d4ed8; font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; font-family:monospace; border:1px solid #bfdbfe;">:${c.port}</span>` : '';
 
@@ -816,14 +821,14 @@ async function fetchAndRenderAccounts(keepSelection = true) {
                     <div style="font-weight: 700; font-size: 14px; display:flex; align-items:center; flex-wrap:wrap; gap:4px; color:var(--text);">${c.name}${displayNum}${portBadge}</div>
                     <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; margin-top: 4px; color: var(--text-muted);">
                         <span class="status-dot ${statusClass}" style="width: 8px; height: 8px;"></span>
-                        <span class="status-text">${displayStatus}</span>
+                        <span class="status-text" style="font-weight: 600; color: ${isClientReady ? 'var(--success)' : 'inherit'};">${displayStatus}</span>
                     </div>
                 </div>
                 <div style="display: flex; gap: 8px;">
                     <button type="button" class="secondary btn-pill" style="padding: 5px 12px; font-size: 11px; font-weight: 700;" onclick="selectActiveAccount('${c.id}', '${c.name}')">
                         Manage
                     </button>
-                    ${c.status === 'ready' ? `
+                    ${isClientReady ? `
                         <button type="button" class="secondary btn-pill" style="padding: 5px 12px; font-size: 11px; font-weight: 700; color: #dc2626; border-color: #fca5a5; background: #fef2f2;" onclick="clearAccountSession('${c.id}')">
                             Logout
                         </button>
@@ -899,44 +904,60 @@ async function pollActiveAccountStatus() {
         const methodTabs = document.getElementById('linkingMethodTabs');
         const phoneContainer = document.getElementById('accountPhoneLinkContainer');
 
-        if (statusData.ready) {
+        const isReady = statusData.ready === true || statusData.status === 'ready';
+
+        if (isReady) {
             qrContainer.style.display = 'none';
             qrLoading.style.display = 'none';
             phoneContainer.style.display = 'none';
             methodTabs.style.display = 'none';
             qrLinked.style.display = 'block';
 
-            const accountName = statusData.name || (activeClientId === 'default' ? 'Default Account' : 'WhatsApp');
+            const clientCache = (window.allClientsCache || []).find(c => c.id === activeClientId) || {};
+            const accountName = statusData.name || clientCache.name || (activeClientId === 'default' ? 'Default Account' : 'WhatsApp');
             const headerEl = document.getElementById('accountLinkedHeader');
             if (headerEl) {
                 headerEl.textContent = `${accountName} is Linked`;
             }
 
+            const resolvedNum = statusData.number || clientCache.number;
             const phoneValEl = document.getElementById('accountLinkedPhoneVal');
             if (phoneValEl) {
-                phoneValEl.textContent = statusData.number ? `+${statusData.number}` : 'Connected (Active)';
+                phoneValEl.textContent = resolvedNum ? `+${resolvedNum}` : 'Connected (Active)';
             }
             const portValEl = document.getElementById('accountLinkedPortVal');
             if (portValEl) {
-                portValEl.textContent = `:${statusData.port || 5000}`;
+                portValEl.textContent = `:${statusData.port || clientCache.port || 5000}`;
             }
             const apiEl = document.getElementById('accountLinkedApiUrl');
             if (apiEl) {
                 const host = window.location.hostname || 'localhost';
-                const p = statusData.port || (activeClientId === 'default' ? 5000 : (window.location.port || 5000));
+                const p = statusData.port || clientCache.port || (activeClientId === 'default' ? 5000 : (window.location.port || 5000));
                 apiEl.textContent = `http://${host}:${p}/api/v1/send`;
             }
 
-            // Synchronize the left list active row if it's currently showing connecting
+            // Immediately synchronize the left list active row in DOM:
             const activeRow = document.querySelector(`#accountsList .scan-row[data-id="${activeClientId}"]`);
             if (activeRow) {
                 const dot = activeRow.querySelector('.status-dot');
                 const text = activeRow.querySelector('.status-text');
-                if (dot && !dot.classList.contains('success')) {
+                if (dot) {
                     dot.className = 'status-dot success';
-                    if (text) text.textContent = 'Connected';
-                    // Re-fetch accounts to sync phone number in title and logout button
-                    fetchAndRenderAccounts(true);
+                }
+                if (text) {
+                    text.textContent = 'Connected';
+                    text.style.color = 'var(--success)';
+                }
+                // Ensure Logout button is present in button group
+                const btnGroup = activeRow.querySelector('div:last-child');
+                if (btnGroup && !btnGroup.innerHTML.includes('Logout')) {
+                    const logoutBtn = document.createElement('button');
+                    logoutBtn.type = 'button';
+                    logoutBtn.className = 'secondary btn-pill';
+                    logoutBtn.style.cssText = 'padding: 5px 12px; font-size: 11px; font-weight: 700; color: #dc2626; border-color: #fca5a5; background: #fef2f2;';
+                    logoutBtn.textContent = 'Logout';
+                    logoutBtn.onclick = () => clearAccountSession(activeClientId);
+                    btnGroup.insertBefore(logoutBtn, btnGroup.children[1] || null);
                 }
             }
         } else {

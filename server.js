@@ -479,7 +479,9 @@ function getOrCreateClient(clientId, name = null) {
     });
 
     clientInstance.on("authenticated", () => {
-        clientInfo.status = "authenticating";
+        if (!clientInfo.isReady) {
+            clientInfo.status = "authenticating";
+        }
         console.log(`✅ [${clientInfo.name}] WhatsApp authenticated`);
         addLog("success", `[${clientInfo.name}] WhatsApp authenticated`);
     });
@@ -1835,10 +1837,11 @@ app.get("/api/v1/status", async (req, res) => {
 
     const resolvedNumber = clientInfo.number || (clientInfo.client && clientInfo.client.info && clientInfo.client.info.wid ? clientInfo.client.info.wid.user : null);
     const resolvedPort = clientPorts.get(clientId) || (clientId === 'default' ? port : null);
+    const isReady = clientInfo.isReady || clientInfo.status === 'ready';
 
     res.json({
-        status: clientInfo.status,
-        ready: clientInfo.isReady,
+        status: isReady ? 'ready' : clientInfo.status,
+        ready: isReady,
         number: resolvedNumber,
         name: clientInfo.name,
         port: resolvedPort,
@@ -1931,12 +1934,13 @@ app.get("/api/v1/clients", (req, res) => {
     for (const [clientId, info] of clients.entries()) {
         const resolvedNumber = info.number || (info.client && info.client.info && info.client.info.wid ? info.client.info.wid.user : null);
         const resolvedPort = clientPorts.get(clientId) || (clientId === 'default' ? port : null);
+        const isReady = info.isReady || info.status === 'ready';
         list.push({
             id: clientId,
             name: info.name,
-            status: info.status,
+            status: isReady ? 'ready' : info.status,
             number: resolvedNumber,
-            ready: info.isReady,
+            ready: isReady,
             port: resolvedPort,
             pairingCode: info.pairingCode
         });
