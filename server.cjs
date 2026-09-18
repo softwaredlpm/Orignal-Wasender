@@ -1562,36 +1562,50 @@ async function sendMessageJob(job) {
     throw new Error(`WhatsApp connection '${clientInfo.name}' is not ready (status: ${clientInfo.status})`);
   }
   const clientInstance = clientInfo.client;
-  const chatId = number + "@c.us";
-  let targetChatId = chatId;
+  const cleanNumber = String(number).replace(/\D/g, "");
+  const standardChatId = (cleanNumber || number) + "@c.us";
+  let targetChatId = standardChatId;
+
+  // Self-Healing: Pre-fetch contact safely to resolve JID and warm up WhatsApp Web cache without corrupting LID
   try {
     console.log(`\u{1F50D} Pre-resolving contact mapping for ${number} on ${clientInfo.name}...`);
-    const contact = await clientInstance.getContactById(chatId);
-    if (contact && contact.id && contact.id._serialized) {
-      targetChatId = contact.id._serialized;
-      if (targetChatId !== chatId) {
-        console.log(`\u2139\uFE0F Resolved identifier for ${number}: ${chatId} -> ${targetChatId}`);
+    const numberId = await clientInstance.getNumberId(cleanNumber || number).catch(() => null);
+    if (numberId && numberId._serialized && !numberId._serialized.includes('@lid')) {
+      targetChatId = numberId._serialized;
+      if (targetChatId !== standardChatId) {
+        console.log(`\u2139\uFE0F Resolved identifier for ${number}: ${standardChatId} -> ${targetChatId}`);
+      }
+    } else {
+      const contact = await clientInstance.getContactById(standardChatId).catch(() => null);
+      if (contact && contact.id && contact.id._serialized && !contact.id._serialized.includes('@lid')) {
+        targetChatId = contact.id._serialized;
       }
     }
   } catch (contactError) {
     console.warn(`\u26A0\uFE0F Warning pre-resolving contact ${number}:`, contactError.message);
   }
+
   try {
+    // Human Simulation: "Typing..." Indicator
     try {
-      const chat = await clientInstance.getChatById(targetChatId);
-      const typingDuration = Math.floor(Math.random() * (6e3 - 3e3 + 1) + 3e3);
-      console.log(`\u270D\uFE0F [Human Sim] Typing for ${typingDuration}ms in chat ${number} using ${clientInfo.name}...`);
-      await chat.sendStateTyping();
-      await new Promise((resolve) => setTimeout(resolve, typingDuration));
-      await chat.clearState();
+      const chat = await clientInstance.getChatById(targetChatId).catch(() => null);
+      if (chat && typeof chat.sendStateTyping === 'function') {
+        const typingDuration = Math.floor(Math.random() * (4e3 - 2e3 + 1) + 2e3);
+        console.log(`\u270D\uFE0F [Human Sim] Typing for ${typingDuration}ms in chat ${number} using ${clientInfo.name}...`);
+        await chat.sendStateTyping().catch(() => {});
+        await delay(typingDuration);
+        await chat.clearState().catch(() => {});
+      }
     } catch (simError) {
-      console.log("\u26A0\uFE0F Could not simulate typing (Chat might not exist yet), proceeding to send anyway.", simError.message);
+      // Chat might not exist yet, normal for first-time recipients
     }
+
     let finalFilePath = filePath;
     if (filePath && (filePath.trim() === "<PDFPATH>" || filePath.includes("<") && filePath.includes(">"))) {
       console.log(`\u26A0\uFE0F [Job: ${jobId}] Ignoring literal placeholder filePath: ${filePath}`);
       finalFilePath = null;
     }
+
     if (finalFilePath) {
       if (!fs.existsSync(finalFilePath)) {
         throw new Error(`File not found: ${finalFilePath}`);
@@ -1599,16 +1613,61 @@ async function sendMessageJob(job) {
       if (fs.lstatSync(finalFilePath).isDirectory()) {
         throw new Error(`The path provided is a directory, not a file: ${finalFilePath}. Please provide the full path to the PDF file.`);
       }
-      console.log(`\u{1F4E4} [Job: ${jobId}] Sending media to ${number} via ${clientInfo.name} (File: ${path.basename(finalFilePath)})`);
+
+      const ext = path.extname(finalFilePath).toLowerCase();
+      const isMediaImageOrVideo = ['.jpg', '.jpeg', '.png', '.webp', '.mp4', '.3gp', '.mov', '.gif'].includes(ext);
+      const sendAsDocument = !isMediaImageOrVideo || Boolean(job.sendMediaAsDocument);
+
+      console.log(`\u{1F4E4} [Job: ${jobId}] Sending ${sendAsDocument ? 'document' : 'media'} to ${number} via ${clientInfo.name} (File: ${path.basename(finalFilePath)})`);
       const media = MessageMedia.fromFilePath(finalFilePath);
-      const response = await withTimeout(clientInstance.sendMessage(targetChatId, media, { caption: safeMessage || "" }), 45e3);
+
+      const sendOptions = {
+        caption: safeMessage || "",
+        sendMediaAsDocument: sendAsDocument
+      };
+
+      let response;
+      try {
+        response = await withTimeout(clientInstance.sendMessage(targetChatId, media, sendOptions), 45e3);
+      } catch (mediaSendErr) {
+        const errMsg = mediaSendErr?.message || "";
+        if (errMsg.includes("id property") || errMsg.includes("memoize") || errMsg.includes("lid") || errMsg.includes("Evaluation failed")) {
+          console.warn(`\u26A0\uFE0F [Job: ${jobId}] Primary send encountered memoize/getter error (${errMsg}). Attempting safe retry for ${standardChatId}...`);
+
+          await clientInstance.pupPage.evaluate(async (jid) => {
+            try {
+              const wid = window.require('WAWebWidFactory').createWid(jid);
+              await window.require('WAWebFindChatAction').findOrCreateLatestChat(wid);
+            } catch (e) { }
+          }, standardChatId).catch(() => {});
+
+          await delay(1200);
+          response = await withTimeout(clientInstance.sendMessage(standardChatId, media, sendOptions), 45e3);
+        } else {
+          throw mediaSendErr;
+        }
+      }
+
       const responseId = response && response.id ? response.id._serialized : `unknown_${Date.now()}`;
       console.log(`\u2705 [Job: ${jobId}] Media sent successfully. Message ID: ${responseId}`);
       return;
     }
+
     if (message) {
       console.log(`\u{1F4E4} [Job: ${jobId}] Sending text message to ${number} via ${clientInfo.name}`);
-      const response = await withTimeout(clientInstance.sendMessage(targetChatId, safeMessage), 3e4);
+      let response;
+      try {
+        response = await withTimeout(clientInstance.sendMessage(targetChatId, safeMessage), 3e4);
+      } catch (textSendErr) {
+        const errMsg = textSendErr?.message || "";
+        if (errMsg.includes("id property") || errMsg.includes("memoize") || errMsg.includes("lid") || errMsg.includes("Evaluation failed")) {
+          console.warn(`\u26A0\uFE0F [Job: ${jobId}] Primary text send encountered memoize error. Retrying with ${standardChatId}...`);
+          await delay(1000);
+          response = await withTimeout(clientInstance.sendMessage(standardChatId, safeMessage), 3e4);
+        } else {
+          throw textSendErr;
+        }
+      }
       const responseId = response && response.id ? response.id._serialized : `unknown_${Date.now()}`;
       console.log(`\u2705 [Job: ${jobId}] Text sent successfully. Message ID: ${responseId}`);
       return;
@@ -1618,7 +1677,11 @@ async function sendMessageJob(job) {
     console.error("\u274C Raw Send Error:", error);
     let errorMessage = error.message || "Unknown error";
     if (errorMessage.includes("Evaluation failed") || errorMessage.includes("Evaluation failed: t")) {
-      errorMessage = `Number ${number} may not be on WhatsApp or chat cannot be accessed. Please verify the number is correct and has WhatsApp installed.`;
+      if (errorMessage.includes("id property") || errorMessage.includes("memoize")) {
+        errorMessage = `WhatsApp internal memoize/contact error sending to ${number}. Contact data could not be indexed by WhatsApp Web.`;
+      } else {
+        errorMessage = `Number ${number} may not be on WhatsApp or chat cannot be accessed. Please verify the number is correct and has WhatsApp installed.`;
+      }
     } else if (errorMessage.includes("not registered") || errorMessage.includes("not found")) {
       errorMessage = `Number ${number} is not registered on WhatsApp.`;
     } else if (errorMessage.includes("timeout") || errorMessage.includes("TIMEOUT")) {

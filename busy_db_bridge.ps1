@@ -216,7 +216,7 @@ elseif ($Action -eq "GET_BATCH_CLOSING_STOCK") {
                 FROM Tran3 T3
                 WHERE LTRIM(RTRIM(T3.No)) <> ''
                 GROUP BY T3.MasterCode1, LTRIM(RTRIM(T3.No)), T3.MasterCode2, T3.VchCode
-                HAVING SUM(T3.Value1) <> 0
+                HAVING ROUND(SUM(T3.Value1), 2) <> 0
             ) T
             INNER JOIN Master1 M1 ON T.MasterCode1 = M1.Code
             INNER JOIN Master1 MC ON T.MasterCode2 = MC.Code
@@ -230,7 +230,7 @@ elseif ($Action -eq "GET_BATCH_CLOSING_STOCK") {
             LEFT JOIN Master1 Party ON PartyRef.PartyCode = Party.Code
             WHERE 1=1 $SearchFilter 
             GROUP BY M1.Name, Party.Name, MC.Name, T.No
-            HAVING SUM(T.NetVal) <> 0
+            HAVING ROUND(SUM(T.NetVal), 2) <> 0
             ORDER BY MC.Name ASC, M1.Name ASC, T.No ASC"
 
 
