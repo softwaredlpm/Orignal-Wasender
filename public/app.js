@@ -769,6 +769,18 @@ function initializeAccountsManager() {
 
 window.allClientsCache = [];
 
+function formatPhoneNumber(num) {
+    if (!num) return '';
+    const clean = String(num).replace(/\D/g, '');
+    if (clean.length === 12 && clean.startsWith('91')) {
+        return `+91 ${clean.slice(2, 7)} ${clean.slice(7)}`;
+    }
+    if (clean.length === 10) {
+        return `+91 ${clean.slice(0, 5)} ${clean.slice(5)}`;
+    }
+    return `+${clean}`;
+}
+
 async function fetchAndRenderAccounts(keepSelection = true) {
     try {
         const data = await robustFetch('/clients');
@@ -785,13 +797,13 @@ async function fetchAndRenderAccounts(keepSelection = true) {
             const row = document.createElement('div');
             row.className = 'glass-card scan-row';
             row.setAttribute('data-id', c.id);
-            row.style.padding = '12px 16px';
+            row.style.padding = '14px 18px';
             row.style.display = 'flex';
             row.style.justifyContent = 'space-between';
             row.style.alignItems = 'center';
             row.style.cursor = 'pointer';
-            row.style.marginBottom = '8px';
-            row.style.borderRadius = '10px';
+            row.style.marginBottom = '10px';
+            row.style.borderRadius = '12px';
             row.style.transition = 'all 0.2s ease';
 
             if (activeClientId === c.id) {
@@ -813,28 +825,27 @@ async function fetchAndRenderAccounts(keepSelection = true) {
             const isClientReady = c.ready === true || c.status === 'ready';
             const statusClass = isClientReady ? 'success' : (c.status === 'authenticating' ? 'warning' : 'error');
             const displayStatus = isClientReady ? 'Connected' : (c.status === 'authenticating' ? 'Connecting/Scan QR' : 'Disconnected');
-            const displayNum = c.number ? ` (+${c.number})` : '';
-            const portBadge = c.port ? `<span style="margin-left:6px; background:#eff6ff; color:#1d4ed8; font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; font-family:monospace; border:1px solid #bfdbfe;">:${c.port}</span>` : '';
+            const displayNum = c.number ? `<span style="color: var(--text-secondary); font-size: 13px; font-weight: 600;">(${formatPhoneNumber(c.number)})</span>` : '';
+            const portBadge = c.port ? `<span style="background:#eff6ff; color:#1d4ed8; font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; font-family:monospace; border:1px solid #bfdbfe;">:${c.port}</span>` : '';
 
             row.innerHTML = `
-                <div>
-                    <div style="font-weight: 700; font-size: 14px; display:flex; align-items:center; flex-wrap:wrap; gap:4px; color:var(--text);">${c.name}${displayNum}${portBadge}</div>
-                    <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; margin-top: 4px; color: var(--text-muted);">
-                        <span class="status-dot ${statusClass}" style="width: 8px; height: 8px;"></span>
-                        <span class="status-text" style="font-weight: 600; color: ${isClientReady ? 'var(--success)' : 'inherit'};">${displayStatus}</span>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 700; font-size: 14px; display:flex; align-items:center; flex-wrap:wrap; gap:6px; color:var(--text);">
+                        <span>${c.name}</span>
+                        ${displayNum}
+                        ${portBadge}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; margin-top: 5px;">
+                        <span class="status-dot ${statusClass}" style="width: 8px; height: 8px; flex-shrink: 0;"></span>
+                        <span class="status-text" style="font-weight: 600; color: ${isClientReady ? 'var(--success)' : 'var(--text-muted)'};">${displayStatus}</span>
                     </div>
                 </div>
-                <div style="display: flex; gap: 8px;">
-                    <button type="button" class="secondary btn-pill" style="padding: 5px 12px; font-size: 11px; font-weight: 700;" onclick="selectActiveAccount('${c.id}', '${c.name}')">
+                <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                    <button type="button" class="secondary btn-pill" style="padding: 6px 14px; font-size: 12px; font-weight: 700;" onclick="selectActiveAccount('${c.id}', '${c.name}')">
                         Manage
                     </button>
-                    ${isClientReady ? `
-                        <button type="button" class="secondary btn-pill" style="padding: 5px 12px; font-size: 11px; font-weight: 700; color: #dc2626; border-color: #fca5a5; background: #fef2f2;" onclick="clearAccountSession('${c.id}')">
-                            Logout
-                        </button>
-                    ` : ''}
                     ${c.id !== 'default' ? `
-                        <button type="button" class="btn-danger btn-pill" style="padding: 5px 12px; font-size: 11px; font-weight: 700;" onclick="deleteAccount('${c.id}', '${c.name}')">
+                        <button type="button" class="btn-danger btn-pill" style="padding: 6px 10px; font-size: 11px; font-weight: 700;" onclick="deleteAccount('${c.id}', '${c.name}')" title="Delete connection">
                             Delete
                         </button>
                     ` : ''}
@@ -920,10 +931,10 @@ async function pollActiveAccountStatus() {
                 headerEl.textContent = `${accountName} is Linked`;
             }
 
-            const resolvedNum = statusData.number || clientCache.number;
+            const rawNum = statusData.number || clientCache.number;
             const phoneValEl = document.getElementById('accountLinkedPhoneVal');
             if (phoneValEl) {
-                phoneValEl.textContent = resolvedNum ? `+${resolvedNum}` : 'Connected (Active)';
+                phoneValEl.textContent = rawNum ? formatPhoneNumber(rawNum) : 'Connected (Active)';
             }
             const portValEl = document.getElementById('accountLinkedPortVal');
             if (portValEl) {
@@ -936,7 +947,7 @@ async function pollActiveAccountStatus() {
                 apiEl.textContent = `http://${host}:${p}/api/v1/send`;
             }
 
-            // Immediately synchronize the left list active row in DOM:
+            // Synchronize the left list active row in DOM cleanly (no extra button injection):
             const activeRow = document.querySelector(`#accountsList .scan-row[data-id="${activeClientId}"]`);
             if (activeRow) {
                 const dot = activeRow.querySelector('.status-dot');
@@ -947,17 +958,6 @@ async function pollActiveAccountStatus() {
                 if (text) {
                     text.textContent = 'Connected';
                     text.style.color = 'var(--success)';
-                }
-                // Ensure Logout button is present in button group
-                const btnGroup = activeRow.querySelector('div:last-child');
-                if (btnGroup && !btnGroup.innerHTML.includes('Logout')) {
-                    const logoutBtn = document.createElement('button');
-                    logoutBtn.type = 'button';
-                    logoutBtn.className = 'secondary btn-pill';
-                    logoutBtn.style.cssText = 'padding: 5px 12px; font-size: 11px; font-weight: 700; color: #dc2626; border-color: #fca5a5; background: #fef2f2;';
-                    logoutBtn.textContent = 'Logout';
-                    logoutBtn.onclick = () => clearAccountSession(activeClientId);
-                    btnGroup.insertBefore(logoutBtn, btnGroup.children[1] || null);
                 }
             }
         } else {

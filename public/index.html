@@ -417,32 +417,32 @@
                         </p>
 
                         <!-- Device Information Matrix -->
-                        <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px; padding: 16px 18px; margin-bottom: 22px; text-align: left;">
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;">
+                        <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px; padding: 18px 20px; margin-bottom: 22px; text-align: left;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;">
                                 <div>
-                                    <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px;">Connected Number</div>
-                                    <div id="accountLinkedPhone" style="font-size: 14px; font-weight: 700; color: var(--text); margin-top: 4px; display: flex; align-items: center; gap: 6px;">
-                                        <span>📱</span> <span id="accountLinkedPhoneVal">--</span>
+                                    <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 4px;">Connected Number</div>
+                                    <div id="accountLinkedPhone" style="font-size: 14px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 6px;">
+                                        <span>📱</span> <span id="accountLinkedPhoneVal" style="font-family: monospace; font-size: 14px; font-weight: 700;">--</span>
                                     </div>
                                 </div>
                                 <div>
-                                    <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px;">Service Port</div>
-                                    <div style="font-size: 14px; font-weight: 700; color: var(--primary); margin-top: 4px; display: flex; align-items: center; gap: 6px;">
-                                        <span>🔌</span> <span id="accountLinkedPortVal">:5000</span>
-                                        <span style="font-size: 10px; background: #eff6ff; color: #1d4ed8; padding: 2px 6px; border-radius: 6px; font-weight: 700; border: 1px solid #bfdbfe;">Active</span>
+                                    <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 4px;">Service Port</div>
+                                    <div style="font-size: 14px; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px;">
+                                        <span id="accountLinkedPortVal" style="font-family: monospace; font-size: 15px; font-weight: 800; color: #1d4ed8;">:5000</span>
+                                        <span style="font-size: 10px; background: #eff6ff; color: #1d4ed8; padding: 2px 7px; border-radius: 6px; font-weight: 700; border: 1px solid #bfdbfe;">Active</span>
                                     </div>
                                 </div>
                                 <div>
-                                    <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px;">Live Status</div>
-                                    <div style="font-size: 14px; font-weight: 700; color: var(--success); margin-top: 4px; display: flex; align-items: center; gap: 6px;">
+                                    <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 4px;">Live Status</div>
+                                    <div style="font-size: 13px; font-weight: 700; color: var(--success); display: flex; align-items: center; gap: 6px;">
                                         <span class="status-dot success" style="width: 8px; height: 8px;"></span> Connected & Ready
                                     </div>
                                 </div>
                                 <div>
-                                    <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px;">API URL</div>
-                                    <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-top: 4px; font-family: monospace; display: flex; align-items: center; gap: 6px;">
-                                        <span id="accountLinkedApiUrl">/api/v1/send</span>
-                                        <button type="button" class="secondary btn-pill" style="padding: 2px 7px; font-size: 10px; cursor: pointer;" onclick="copyAccountEndpoint()">Copy</button>
+                                    <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 4px;">API Endpoint</div>
+                                    <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 6px;">
+                                        <code id="accountLinkedApiUrl" style="background: white; padding: 3px 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 11px; color: #1e3a8a;">/api/v1/send</code>
+                                        <button type="button" class="secondary btn-pill" style="padding: 3px 8px; font-size: 10px; font-weight: 700; cursor: pointer;" onclick="copyAccountEndpoint()">Copy</button>
                                     </div>
                                 </div>
                             </div>
