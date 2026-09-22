@@ -2486,6 +2486,11 @@ app.get("/api/busy/closing-stock", async (req, res) => {
     }
 });
 
+// Download / Redirect Endpoint for Microsoft Access Database Engine (64-bit)
+app.get("/api/download/ace-oledb-64", (req, res) => {
+    res.redirect("https://www.microsoft.com/en-us/download/details.aspx?id=54920");
+});
+
 // Admin Only: Batch-wise Closing Stock
 app.get("/api/busy/batch-closing-stock", async (req, res) => {
     // 1. Check Admin Auth

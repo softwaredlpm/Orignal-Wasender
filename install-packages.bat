@@ -63,10 +63,11 @@ echo ##################################################
 echo.
 echo What would you like to do now?
 echo 1. Start WA Sender Dashboard
-echo 2. Exit
+echo 2. Install Microsoft ACE OLEDB (64-bit) for BUSY Access DB
+echo 3. Exit
 echo.
 
-set /p choice="Enter your choice (1-2): "
+set /p choice="Enter your choice (1-3): "
 
 if "%choice%"=="1" (
     echo.
@@ -75,6 +76,10 @@ if "%choice%"=="1" (
     timeout /t 3 >nul
     start http://localhost:5000
     echo Dashboard launched!
+)
+
+if "%choice%"=="2" (
+    call "%~dp0install-ace-oledb-64.bat"
 )
 
 echo.
