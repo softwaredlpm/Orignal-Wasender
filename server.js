@@ -30,6 +30,7 @@ console.log(`💻 Machine ID: ${MACHINE_ID}`);
 const queueFile = path.join(appDir, "queue.json");
 const logsFile = path.join(appDir, "logs.json");
 const licenseFile = path.join(appDir, "license.key");
+const nonWhatsAppFile = path.join(appDir, "non_whatsapp_cache.json");
 
 // Secret salt for license key validation (should be kept secret)
 const LICENSE_SECRET_SALT = "whatsapp-client-license-salt-2024";
@@ -129,6 +130,59 @@ function saveLogs() {
 
 // Load existing logs on startup
 logsHistory = loadLogs();
+
+// ======================
+// Non-WhatsApp Number Cache & Fast-Skip
+// ======================
+function loadNonWhatsAppCache() {
+    if (!fs.existsSync(nonWhatsAppFile)) return {};
+    try {
+        const raw = fs.readFileSync(nonWhatsAppFile, "utf8");
+        return JSON.parse(raw);
+    } catch {
+        return {};
+    }
+}
+
+let nonWhatsAppCache = loadNonWhatsAppCache();
+
+function saveNonWhatsAppCache() {
+    try {
+        fs.writeFileSync(nonWhatsAppFile, JSON.stringify(nonWhatsAppCache, null, 2));
+    } catch (e) {
+        console.error("Error saving non-WhatsApp cache:", e.message);
+    }
+}
+
+function isKnownNonWhatsApp(rawNumber) {
+    if (!rawNumber) return false;
+    const clean = String(rawNumber).replace(/\D/g, "");
+    if (!clean) return false;
+    const entry = nonWhatsAppCache[clean];
+    if (!entry) return false;
+
+    // Cache TTL: 30 days
+    const addedTime = entry.addedAt ? new Date(entry.addedAt).getTime() : 0;
+    if (Date.now() - addedTime > 30 * 24 * 60 * 60 * 1000) {
+        delete nonWhatsAppCache[clean];
+        saveNonWhatsAppCache();
+        return false;
+    }
+    return true;
+}
+
+function markAsNonWhatsApp(rawNumber, reason = "Not registered on WhatsApp") {
+    if (!rawNumber) return;
+    const clean = String(rawNumber).replace(/\D/g, "");
+    if (!clean) return;
+    nonWhatsAppCache[clean] = {
+        number: clean,
+        reason: reason,
+        addedAt: new Date().toISOString()
+    };
+    saveNonWhatsAppCache();
+    console.log(`🚫 [Cache] Saved non-WhatsApp number: ${clean} (${reason})`);
+}
 
 // ======================
 // State Management
@@ -1349,14 +1403,25 @@ let messageQueue = loadQueue();
 let processing = false;
 let queuePaused = false;
 
-// STARTUP CLEANUP: Reset any 'processing' jobs to 'pending' in case server crashed
-if (messageQueue.some(j => j.status === 'processing')) {
-    console.log("🧹 Resetting stuck 'processing' jobs to 'pending'...");
-    messageQueue.forEach(job => {
-        if (job.status === 'processing') {
-            job.status = 'pending';
+// STARTUP CLEANUP: Reset any 'processing' jobs to 'pending', and auto-clear any non-WhatsApp / No LID jobs
+let queueCleanedOnStartup = false;
+messageQueue = messageQueue.filter(job => {
+    if (job.status === 'processing') {
+        job.status = 'pending';
+        queueCleanedOnStartup = true;
+    }
+    const err = (job.lastError || job.error || "").toLowerCase();
+    if (job.isNonWhatsApp || err.includes("no lid") || err.includes("not registered") || err.includes("invalid number")) {
+        console.log(`🧹 [Startup Auto-Clear] Removing non-WhatsApp job for ${job.number}`);
+        if (job.filePath && fs.existsSync(job.filePath)) {
+            try { fs.unlinkSync(job.filePath); } catch (e) {}
         }
-    });
+        queueCleanedOnStartup = true;
+        return false; // Auto-clear from queue
+    }
+    return true;
+});
+if (queueCleanedOnStartup) {
     saveQueue(messageQueue);
 }
 
@@ -1482,12 +1547,15 @@ async function processQueue() {
 
                     // Auto-retry logic
                     const retryCount = (job.retryCount || 0) + 1;
+                    const lowerError = (errorMsg || "").toLowerCase();
 
-                    const isFatalError = errorMsg.includes("not registered") ||
-                        errorMsg.includes("invalid number") ||
-                        errorMsg.includes("unable to parse") ||
-                        errorMsg.includes("Message or file required") ||
-                        errorMsg.includes("File not found");
+                    const isFatalError = lowerError.includes("not registered") ||
+                        lowerError.includes("invalid number") ||
+                        lowerError.includes("unable to parse") ||
+                        lowerError.includes("message or file required") ||
+                        lowerError.includes("file not found") ||
+                        lowerError.includes("no lid") ||
+                        lowerError.includes("not on whatsapp");
 
                     const isRecoverableError = !isFatalError;
 
@@ -1506,12 +1574,37 @@ async function processQueue() {
                     } else {
                         job.status = 'failed';
                         job.failedAt = new Date().toISOString();
-                        job.error = errorMsg;
+                        job.error = (lowerError.includes("no lid") || lowerError.includes("not registered")) 
+                            ? `Number ${job.number} is not registered on WhatsApp.` 
+                            : errorMsg;
                         job.retryCount = retryCount;
+                        if (lowerError.includes("not registered") || lowerError.includes("invalid number") || lowerError.includes("unable to parse") || lowerError.includes("no lid") || lowerError.includes("not on whatsapp")) {
+                            job.isNonWhatsApp = true;
+                        }
 
-                        // Move to end
-                        messageQueue.splice(currentJobIndex, 1);
-                        messageQueue.push(job);
+                        if (job.isNonWhatsApp) {
+                            // Remember in fast cache to prevent future attempts
+                            markAsNonWhatsApp(job.number, job.error || "Not on WhatsApp");
+
+                            // AUTO-CLEAR IMMEDIATELY: Delete attachment and remove from queue
+                            if (job.filePath && fs.existsSync(job.filePath)) {
+                                try {
+                                    fs.unlinkSync(job.filePath);
+                                    console.log(`🧹 [Auto-Clear] Deleted file for non-WhatsApp recipient: ${path.basename(job.filePath)}`);
+                                } catch (e) {}
+                            }
+                            messageQueue.splice(currentJobIndex, 1);
+                            console.log(`🧹 [Auto-Clear] Message for ${job.number} auto-cleared from queue (Number not registered on WhatsApp).`);
+                            addLog("warning", `Auto-cleared from queue: ${job.number} is not on WhatsApp`, {
+                                number: job.number,
+                                id: job.id,
+                                reason: job.error
+                            });
+                        } else {
+                            // Move to end
+                            messageQueue.splice(currentJobIndex, 1);
+                            messageQueue.push(job);
+                        }
                     }
                     saveQueue(messageQueue);
                 }
@@ -1648,8 +1741,15 @@ async function sendMessageJob(job) {
     // Self-Healing: Pre-fetch contact safely to resolve JID and warm up WhatsApp Web cache without corrupting LID
     try {
         console.log(`🔍 Pre-resolving contact mapping for ${number} on ${clientInfo.name}...`);
-        const numberId = await clientInstance.getNumberId(cleanNumber || number).catch(() => null);
-        if (numberId && numberId._serialized && !numberId._serialized.includes('@lid')) {
+        const numberId = await clientInstance.getNumberId(cleanNumber || number).catch((e) => {
+            console.warn(`⚠️ Warning checking number existence for ${number}:`, e.message);
+            return 'check_failed';
+        });
+        if (numberId === null) {
+            markAsNonWhatsApp(number, "Number not registered on WhatsApp");
+            throw new Error(`Number ${number} is not registered on WhatsApp.`);
+        }
+        if (numberId && numberId !== 'check_failed' && numberId._serialized && !numberId._serialized.includes('@lid')) {
             targetChatId = numberId._serialized;
             if (targetChatId !== standardChatId) {
                 console.log(`ℹ️ Resolved identifier for ${number}: ${standardChatId} -> ${targetChatId}`);
@@ -1661,6 +1761,9 @@ async function sendMessageJob(job) {
             }
         }
     } catch (contactError) {
+        if (contactError.message && contactError.message.includes("not registered")) {
+            throw contactError;
+        }
         console.warn(`⚠️ Warning pre-resolving contact ${number}:`, contactError.message);
     }
 
@@ -1787,7 +1890,7 @@ async function sendMessageJob(job) {
             } else {
                 errorMessage = `Number ${number} may not be on WhatsApp or chat cannot be accessed. Please verify the number is correct and has WhatsApp installed.`;
             }
-        } else if (errorMessage.includes("not registered") || errorMessage.includes("not found")) {
+        } else if (errorMessage.includes("not registered") || errorMessage.includes("not found") || errorMessage.toLowerCase().includes("no lid")) {
             errorMessage = `Number ${number} is not registered on WhatsApp.`;
         } else if (errorMessage.includes("timeout") || errorMessage.includes("TIMEOUT")) {
             errorMessage = `Request timeout for ${number}. Please try again later.`;
@@ -2178,6 +2281,23 @@ app.get("/api/v1/queue", (req, res) => {
             retryCount: job.retryCount || 0
         }))
     });
+});
+
+// Non-WhatsApp Cache endpoints
+app.get("/api/v1/non-whatsapp-cache", (req, res) => {
+    res.json({
+        success: true,
+        count: Object.keys(nonWhatsAppCache).length,
+        numbers: Object.values(nonWhatsAppCache)
+    });
+});
+
+app.post("/api/v1/non-whatsapp-cache/clear", (req, res) => {
+    const count = Object.keys(nonWhatsAppCache).length;
+    nonWhatsAppCache = {};
+    saveNonWhatsAppCache();
+    addLog("info", `Non-WhatsApp cache cleared (${count} numbers reset)`);
+    res.json({ success: true, message: `Cleared ${count} cached non-WhatsApp numbers` });
 });
 
 // ======================
@@ -3465,9 +3585,40 @@ app.all("/api/v1/send", (req, res) => {
 
         const mobileNumber = formatMobileNumber(number);
         if (!mobileNumber) {
-            return res.status(400).json({
-                success: false,
-                error: 'Invalid mobile number'
+            if (filePath && fs.existsSync(filePath)) {
+                try {
+                    fs.unlinkSync(filePath);
+                    console.log(`🧹 Cleaned up file upload for request with invalid/missing mobile: ${path.basename(filePath)}`);
+                } catch (err) {
+                    console.error("Failed to delete orphaned file:", err.message);
+                }
+            }
+            console.log(`ℹ️ [Auto-Cleared] API request skipped: Invalid or missing mobile number (${number || 'none'})`);
+            addLog("info", `API send request skipped: Invalid or missing mobile number (${number || 'none'})`);
+            return res.json({
+                success: true,
+                skipped: true,
+                message: "Request auto-cleared: Invalid or missing mobile number",
+                to: number || null
+            });
+        }
+
+        // ⚡ Fast-Skip: If number is verified not to have WhatsApp, auto-clear immediately!
+        if (isKnownNonWhatsApp(mobileNumber)) {
+            if (filePath && fs.existsSync(filePath)) {
+                try {
+                    fs.unlinkSync(filePath);
+                    console.log(`🧹 Cleaned up file upload for cached non-WhatsApp recipient: ${path.basename(filePath)}`);
+                } catch (err) {}
+            }
+            console.log(`⚡ [Fast-Skip] Request for ${mobileNumber} auto-cleared: Number is cached as non-WhatsApp.`);
+            addLog("info", `API send request fast-skipped: ${mobileNumber} is known not to have WhatsApp.`);
+            return res.json({
+                success: true,
+                skipped: true,
+                cached: true,
+                message: `Request auto-cleared: ${mobileNumber} has no WhatsApp account (cached).`,
+                to: mobileNumber
             });
         }
 
@@ -3595,13 +3746,25 @@ app.all("/api/v1/send", (req, res) => {
             return res.json({ success: true, message: "WhatsApp API is online" });
         }
 
-        // Troubleshooting: If mobile is missing but there was a query string
+        // Troubleshooting & Auto-Clear: If mobile is missing but there was a query string or body
         if (!mobile && (req.originalUrl.includes("?") || Object.keys(req.body).length > 0)) {
-            console.warn(`⚠️ [Warning] API received a SEND request but no MOBILE number was found.`);
-            console.warn(`👉 Please check your BUSY "Parameter Name" and "Parameter Value" settings.`);
-            return res.status(400).json({
-                success: false,
-                error: "Mobile number parameter is missing in your request."
+            if (filePath && fs.existsSync(filePath)) {
+                try {
+                    fs.unlinkSync(filePath);
+                    console.log(`🧹 Cleaned up file upload for request with no mobile: ${path.basename(filePath)}`);
+                } catch (err) {
+                    console.error("Failed to delete orphaned file:", err.message);
+                }
+            }
+            console.log(`ℹ️ [Auto-Cleared] API request received without mobile/WhatsApp number. Auto-cleared/Ignored.`);
+            addLog("info", "API send request auto-cleared: No mobile/WhatsApp number provided in request", {
+                query: req.query,
+                hasAttachment: !!filePath
+            });
+            return res.json({
+                success: true,
+                skipped: true,
+                message: "Request acknowledged and auto-cleared: Mobile number parameter is missing."
             });
         }
 
@@ -3717,6 +3880,31 @@ setInterval(() => {
         console.error("Error during uploads directory cleanup:", err.message);
     }
 }, 1000 * 60 * 60); // run every 1 hour
+
+// Auto-clear failed non-WhatsApp messages older than 15 minutes to keep queue clean
+setInterval(() => {
+    try {
+        if (!Array.isArray(messageQueue) || messageQueue.length === 0) return;
+        const now = Date.now();
+        const initialCount = messageQueue.length;
+        messageQueue = messageQueue.filter(job => {
+            if (job.status === 'failed' && (job.isNonWhatsApp || (job.error && (job.error.includes("not registered") || job.error.includes("invalid number"))))) {
+                const failedTime = job.failedAt ? new Date(job.failedAt).getTime() : 0;
+                // Auto-clear if failed more than 15 minutes ago
+                if (now - failedTime > 15 * 60 * 1000) {
+                    return false;
+                }
+            }
+            return true;
+        });
+        if (messageQueue.length < initialCount) {
+            saveQueue(messageQueue);
+            console.log(`🧹 [Auto-Clear] Removed ${initialCount - messageQueue.length} old failed non-WhatsApp message(s) from queue.`);
+        }
+    } catch (e) {
+        console.error("Error in auto-clearing failed queue:", e.message);
+    }
+}, 5 * 60 * 1000); // Check every 5 minutes
 
 // ======================
 // Start Server

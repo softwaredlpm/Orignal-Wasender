@@ -359,6 +359,15 @@ function updateQueueDisplay(data) {
 
     if (count) count.textContent = data.pending || 0;
 
+    const clearFailedBtn = document.getElementById('clearFailedBtn');
+    if (clearFailedBtn) {
+        const failedCount = data.failed !== undefined ? data.failed : (data.queue ? data.queue.filter(j => j.status === 'failed').length : 0);
+        clearFailedBtn.innerHTML = `🗑️ Clear Failed (${failedCount})`;
+        clearFailedBtn.disabled = failedCount === 0;
+        clearFailedBtn.style.opacity = failedCount === 0 ? '0.5' : '1';
+        clearFailedBtn.style.cursor = failedCount === 0 ? 'not-allowed' : 'pointer';
+    }
+
     if (!list) return;
 
     if (!data.queue || data.queue.length === 0) {
@@ -383,10 +392,27 @@ function updateQueueDisplay(data) {
 }
 
 function setupQueueActions() {
-    document.getElementById('clearQueueBtn')?.addEventListener('click', async () => {
-        if (!await showConfirm('Clear Queue?', 'Are you sure you want to clear the entire message queue? This action cannot be undone.')) return;
+    document.getElementById('clearFailedBtn')?.addEventListener('click', async () => {
+        if (!await showConfirm('Clear Failed Messages?', 'Are you sure you want to remove all failed messages from the queue? Pending messages will remain.')) return;
         try {
-            await robustFetch('/queue/clear', { method: 'POST' });
+            const res = await robustFetch('/queue/clear', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ clearFailed: true })
+            });
+            checkQueue();
+            showToast(res.message || 'Cleared failed messages', 'success');
+        } catch (e) { showToast(e.message, 'error'); }
+    });
+
+    document.getElementById('clearQueueBtn')?.addEventListener('click', async () => {
+        if (!await showConfirm('Clear Entire Queue?', 'Are you sure you want to clear the entire message queue? This will remove both pending and failed messages.')) return;
+        try {
+            await robustFetch('/queue/clear', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ clearAll: true })
+            });
             checkQueue();
             showToast('Queue Cleared', 'success');
         } catch (e) { showToast(e.message, 'error'); }
@@ -633,7 +659,33 @@ function setupSettings() {
             }
         });
     }
+
+    // Load non-WhatsApp cache badge on initialization
+    loadNonWhatsAppCacheStatus();
 }
+
+// Non-WhatsApp Cache Management
+async function loadNonWhatsAppCacheStatus() {
+    try {
+        const res = await robustFetch('/non-whatsapp-cache');
+        const badge = document.getElementById('nonWaCacheBadge');
+        if (badge && res.success) {
+            badge.textContent = `${res.count || 0} Numbers Cached`;
+        }
+    } catch (e) {}
+}
+
+window.clearNonWhatsAppCache = async function() {
+    if (!await showConfirm('Reset Non-WhatsApp Cache?', 'Are you sure you want to clear the non-WhatsApp number cache? WA Sender will re-verify these numbers on future requests.')) return;
+    try {
+        const res = await robustFetch('/non-whatsapp-cache/clear', { method: 'POST' });
+        showToast(res.message || 'Cache reset successfully', 'success');
+        loadNonWhatsAppCacheStatus();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+};
+
 // ======================
 // License & Tabs
 // ======================
@@ -652,6 +704,10 @@ function setupTabs() {
             tab.classList.add('active');
             const target = tab.getAttribute('data-tab');
             document.getElementById(target).classList.add('active');
+
+            if (target === 'settings') {
+                loadNonWhatsAppCacheStatus();
+            }
         });
     });
 }

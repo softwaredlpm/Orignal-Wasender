@@ -17,6 +17,7 @@ license.key
 # Local Database & Queue Logs
 logs.json
 queue.json
+non_whatsapp_cache.json
 *.log
 pdc_query.log
 server_error.log

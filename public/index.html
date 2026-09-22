@@ -261,10 +261,11 @@
         <div id="queue" class="tab-content">
             <div class="header">
                 <h2>Message Queue</h2>
-                <div style="display:flex; gap:12px;">
+                <div style="display:flex; gap:12px; flex-wrap: wrap;">
                     <button id="retryAllBtn" style="background: var(--accent); white-space: nowrap;">🔄 Retry All Failed</button>
                     <button id="toggleQueueBtn" class="secondary">Pause Queue</button>
-                    <button id="clearQueueBtn" class="secondary" style="color: var(--error);">Clear Queue</button>
+                    <button id="clearFailedBtn" class="secondary" style="color: #d97706; border-color: rgba(217, 119, 6, 0.4); white-space: nowrap;">🗑️ Clear Failed Only</button>
+                    <button id="clearQueueBtn" class="secondary" style="color: var(--error);">Clear All</button>
                 </div>
             </div>
             <div class="queue-list" id="queueList" style="margin-top: 24px;">
@@ -595,6 +596,29 @@
                             </button>
                             <button id="btnPerformUpdate" class="primary btn-update-pill" style="flex: 1; justify-content: center; display: none; height: 46px; border-radius: 12px; font-size: 13.5px;" onclick="triggerUpdateFlow()">
                                 ⬆️ Update Now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Non-WhatsApp Filter Cache Management Card -->
+                <div class="config-subcard" style="background: #ffffff; padding: 24px; margin-top: 24px; border: 1.5px solid #fed7aa; border-radius: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="width: 42px; height: 42px; border-radius: 12px; background: #fff7ed; display: flex; align-items: center; justify-content: center; font-size: 20px;">⚡</div>
+                            <div>
+                                <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text);">Non-WhatsApp Smart Cache & Instant-Skip</h4>
+                                <p style="margin: 3px 0 0; font-size: 12.5px; color: var(--text-secondary);">
+                                    Numbers verified to have no WhatsApp account are cached and instantly skipped (0.001s) on repeat BUSY queries.
+                                </p>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span id="nonWaCacheBadge" class="badge-status-pill" style="background: #fff7ed; color: #c2410c; border-color: #fdba74; font-weight: 700;">
+                                Loading Cache...
+                            </span>
+                            <button id="btnClearNonWaCache" class="secondary" style="height: 38px; font-size: 12.5px; border-radius: 10px; color: var(--error);" onclick="clearNonWhatsAppCache()">
+                                🗑️ Reset Cache
                             </button>
                         </div>
                     </div>
