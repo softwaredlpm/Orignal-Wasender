@@ -613,13 +613,43 @@
                                 </p>
                             </div>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                             <span id="nonWaCacheBadge" class="badge-status-pill" style="background: #fff7ed; color: #c2410c; border-color: #fdba74; font-weight: 700;">
                                 Loading Cache...
                             </span>
-                            <button id="btnClearNonWaCache" class="secondary" style="height: 38px; font-size: 12.5px; border-radius: 10px; color: var(--error);" onclick="clearNonWhatsAppCache()">
-                                🗑️ Reset Cache
+                            <button id="btnToggleNonWaList" class="secondary" style="height: 38px; font-size: 12.5px; border-radius: 10px;" onclick="toggleNonWaList()">
+                                👁️ View Numbers
                             </button>
+                            <button id="btnClearNonWaCache" class="secondary" style="height: 38px; font-size: 12.5px; border-radius: 10px; color: var(--error);" onclick="clearNonWhatsAppCache()">
+                                🗑️ Reset All
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Display Table of Cached Non-WhatsApp Numbers -->
+                    <div id="nonWaListContainer" style="margin-top: 18px; border-top: 1px dashed #fed7aa; padding-top: 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <span style="font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">
+                                📋 Cached Non-WhatsApp Numbers (Auto-Skipped)
+                            </span>
+                            <span style="font-size: 11.5px; color: var(--text-muted);">TTL: Auto-expires after 30 days</span>
+                        </div>
+                        <div style="border: 1px solid var(--border-color); border-radius: 10px; overflow-x: auto; background: #fafafa;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+                                <thead style="background: #f1f5f9; border-bottom: 1px solid var(--border-color);">
+                                    <tr>
+                                        <th style="padding: 10px 14px; font-weight: 700; color: var(--text-secondary); width: 25%;">Phone Number</th>
+                                        <th style="padding: 10px 14px; font-weight: 700; color: var(--text-secondary); width: 45%;">Reason</th>
+                                        <th style="padding: 10px 14px; font-weight: 700; color: var(--text-secondary); width: 20%;">Date Added</th>
+                                        <th style="padding: 10px 14px; font-weight: 700; color: var(--text-secondary); text-align: right; width: 10%;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="nonWaTableBody">
+                                    <tr>
+                                        <td colspan="4" style="text-align: center; padding: 20px; color: var(--text-muted);">Loading cached numbers...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>

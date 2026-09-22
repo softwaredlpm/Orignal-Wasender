@@ -2300,6 +2300,18 @@ app.post("/api/v1/non-whatsapp-cache/clear", (req, res) => {
     res.json({ success: true, message: `Cleared ${count} cached non-WhatsApp numbers` });
 });
 
+app.post("/api/v1/non-whatsapp-cache/remove", (req, res) => {
+    const { number } = req.body;
+    const clean = String(number || "").replace(/\D/g, "");
+    if (clean && nonWhatsAppCache[clean]) {
+        delete nonWhatsAppCache[clean];
+        saveNonWhatsAppCache();
+        addLog("info", `Removed ${clean} from non-WhatsApp cache`);
+        return res.json({ success: true, message: `Removed ${clean} from cache` });
+    }
+    res.json({ success: false, error: "Number not found in cache" });
+});
+
 // ======================
 // BUSY ADDON INTEGRATION
 // ======================

@@ -665,18 +665,87 @@ function setupSettings() {
 }
 
 // Non-WhatsApp Cache Management
+let nonWaListVisible = true;
+
 async function loadNonWhatsAppCacheStatus() {
     try {
         const res = await robustFetch('/non-whatsapp-cache');
         const badge = document.getElementById('nonWaCacheBadge');
+        const tableBody = document.getElementById('nonWaTableBody');
+        const count = res.count || (res.numbers ? res.numbers.length : 0);
+
         if (badge && res.success) {
-            badge.textContent = `${res.count || 0} Numbers Cached`;
+            badge.textContent = `${count} Number${count === 1 ? '' : 's'} Cached`;
         }
-    } catch (e) {}
+
+        if (tableBody) {
+            if (!res.numbers || res.numbers.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 24px; color: var(--text-muted); font-style: italic;">
+                            No non-WhatsApp numbers cached yet. Numbers will appear here automatically when detected.
+                        </td>
+                    </tr>
+                `;
+            } else {
+                tableBody.innerHTML = res.numbers.map(item => {
+                    const dateStr = item.addedAt ? new Date(item.addedAt).toLocaleString() : 'Recently';
+                    return `
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 10px 14px; font-weight: 700; color: #1e3a8a; font-family: monospace;">
+                                +${escapeHtml(item.number)}
+                            </td>
+                            <td style="padding: 10px 14px; color: var(--text-secondary); font-size: 12.5px;">
+                                ${escapeHtml(item.reason || 'Not registered on WhatsApp')}
+                            </td>
+                            <td style="padding: 10px 14px; color: var(--text-muted); font-size: 12px;">
+                                ${escapeHtml(dateStr)}
+                            </td>
+                            <td style="padding: 10px 14px; text-align: right;">
+                                <button type="button" class="secondary" style="padding: 4px 10px; font-size: 11px; border-radius: 6px; color: var(--error); cursor: pointer;" onclick="removeSingleNonWaNumber('${escapeHtml(item.number)}')">
+                                    ✕ Remove
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to load non-WhatsApp cache status:', e);
+    }
 }
 
+window.toggleNonWaList = function() {
+    const container = document.getElementById('nonWaListContainer');
+    const btn = document.getElementById('btnToggleNonWaList');
+    if (!container) return;
+    nonWaListVisible = !nonWaListVisible;
+    container.style.display = nonWaListVisible ? 'block' : 'none';
+    if (btn) btn.textContent = nonWaListVisible ? '🙈 Hide Numbers' : '👁️ View Numbers';
+};
+
+window.removeSingleNonWaNumber = async function(number) {
+    if (!await showConfirm('Remove from Cache?', `Allow sending to +${number} again?`)) return;
+    try {
+        const res = await robustFetch('/non-whatsapp-cache/remove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ number })
+        });
+        if (res.success) {
+            showToast(res.message || `Removed +${number} from cache`, 'success');
+            loadNonWhatsAppCacheStatus();
+        } else {
+            showToast(res.error || 'Failed to remove', 'error');
+        }
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+};
+
 window.clearNonWhatsAppCache = async function() {
-    if (!await showConfirm('Reset Non-WhatsApp Cache?', 'Are you sure you want to clear the non-WhatsApp number cache? WA Sender will re-verify these numbers on future requests.')) return;
+    if (!await showConfirm('Reset Entire Non-WhatsApp Cache?', 'Are you sure you want to clear all cached non-WhatsApp numbers? WA Sender will re-verify all numbers.')) return;
     try {
         const res = await robustFetch('/non-whatsapp-cache/clear', { method: 'POST' });
         showToast(res.message || 'Cache reset successfully', 'success');
