@@ -541,7 +541,7 @@ function getOrCreateClient(clientId, name = null) {
         processQueue();
     });
 
-    // Auto-Reply Handler for Incoming Party Commands (e.g., STOCK, STOCK SOAP, #STOCK)
+    // Auto-Reply Handler for Incoming Party Commands (Strict 'STOCK' / '#STOCK')
     const processedMessageIds = new Set();
 
     const handleStockCommand = async (msg, targetChat) => {
@@ -579,18 +579,24 @@ function getOrCreateClient(clientId, name = null) {
                 }
             }
 
-            // Precise matching: triggers on explicit commands, prevents triggering on file names like "document.pdf"
-            const isStockQuery = lowerMsg.includes("stock") ||
-                lowerMsg.includes("catalog") ||
-                lowerMsg === "items" ||
-                lowerMsg === "report" ||
-                lowerMsg === "pdf" ||
-                lowerMsg === "batch stock";
-
-            const isBatchQuery = isStockQuery && lowerMsg.includes("batch");
+            // Precise matching: triggers on strict "stock" command or admin "batch stock" (with optional Material Center name)
+            // Strips markdown styling (*, _, ~), hashtags, slashes, punctuation, and surrounding whitespace
+            const normalizedMsg = lowerMsg.replace(/[*_~`]/g, '').replace(/^[#\/!\.\s]+|[#\/!\.\s]+$/g, '').trim();
+            const isBatchQuery = normalizedMsg === "batch stock" || 
+                                 normalizedMsg === "batchstock" || 
+                                 normalizedMsg.startsWith("batch stock ") || 
+                                 normalizedMsg.startsWith("batchstock ");
+            const isStockQuery = (normalizedMsg === "stock") || isBatchQuery;
 
             if (!isStockQuery) return;
 
+            // Extract Material Center name if specified in batch stock command (case-insensitive)
+            let targetMcName = "";
+            if (normalizedMsg.startsWith("batch stock ")) {
+                targetMcName = rawBody.replace(/[*_~`]/g, '').replace(/^[#\/!\.\s]*batch\s+stock\s+/i, '').replace(/[#\/!\.\s]+$/g, '').trim();
+            } else if (normalizedMsg.startsWith("batchstock ")) {
+                targetMcName = rawBody.replace(/[*_~`]/g, '').replace(/^[#\/!\.\s]*batchstock\s+/i, '').replace(/[#\/!\.\s]+$/g, '').trim();
+            }
 
             // Determine recipient chat JID & sender phone number
             let recipientChat = targetChat || (msg.fromMe ? msg.to : msg.from);
@@ -635,30 +641,11 @@ function getOrCreateClient(clientId, name = null) {
             console.log(`📩 Processing STOCK command for +${senderNumber} (${recipientChat}): "${rawBody}"`);
             addLog("info", `Received STOCK command from +${senderNumber} (${recipientChat}): "${rawBody}"`);
 
-            const stopWords = new Set(["stock", "#stock", "status", "list", "stocklist", "send", "pls", "please", "give", "show", "me", "closing", "items", "catalog", "pdf", "report"]);
-            
-            // Clean message for matching
-            const msgWords = lowerMsg.split(/[\s,]+/);
-
-            const displayItems = [];
-
-            // Execute logic
-            for (let i = 0; i < msgWords.length; i++) {
-                const word = msgWords[i];
-                if (!word || stopWords.has(word)) continue;
-                displayItems.push(word);
-            }
-
-            // if (displayItems.length === 0 && !isBatchQuery) return; // Ignore pure "STOCK" command with no item specified unless it's a batch request
-            const words = rawBody.split(/\s+/).filter(w => !stopWords.has(w.toLowerCase()));
-            const searchKeyword = words.join(" ");
-
             const config = BusyService.getConfig();
             const firms = config.firms || [];
 
             if (firms.length === 0) {
-                addLog("warning", "No configured BUSY firms found for STOCK command.");
-                await clientInstance.sendMessage(recipientChat, "⚠️ Stock Status service is currently unavailable. (No active BUSY firm configured)");
+                addLog("warning", `Ignored STOCK command from +${senderNumber}: No configured BUSY firms found (no reply sent).`);
                 return;
             }
 
@@ -699,9 +686,7 @@ function getOrCreateClient(clientId, name = null) {
                 firms.some(f => f.adminPhone && senderNumber.includes(f.adminPhone.replace(/\D/g, '')));
 
             if (isBatchQuery && !isOwner) {
-                addLog("warning", `BATCH STOCK command rejected for +${senderNumber} (Not Admin)`);
-                const unauthorizedMsg = `⚠️ *Admin Access Required*\n\nSorry, the batch-wise stock report is restricted to admin users only.`;
-                await clientInstance.sendMessage(recipientChat, unauthorizedMsg);
+                addLog("warning", `Ignored BATCH STOCK command from +${senderNumber}: Not an admin user (no reply sent).`);
                 return;
             }
 
@@ -711,9 +696,7 @@ function getOrCreateClient(clientId, name = null) {
                     addLog("info", `Owner +${senderNumber} requesting stock without party match. Using all firms.`);
                     matchedFirms = firms.map(f => ({ firm: f, partyInfo: {}, partyName: "Admin / Owner" }));
                 } else {
-                    addLog("warning", `STOCK command rejected for +${senderNumber} (Number not registered as a customer in BUSY)`);
-                    const unauthorizedMsg = `⚠️ *Access Restricted*\n\nSorry, your phone number (*+${senderNumber}*) is not registered as an authorized customer in our BUSY system.\n\nStock PDF reports are only provided to registered customer accounts. Please contact management to register your mobile number.`;
-                    await clientInstance.sendMessage(recipientChat, unauthorizedMsg);
+                    addLog("info", `Ignored STOCK command from +${senderNumber}: Number not found in BUSY database (no reply sent).`);
                     return;
                 }
             }
@@ -726,22 +709,21 @@ function getOrCreateClient(clientId, name = null) {
 
                 // 2. Fetch Stock Status for Valid Customer
                 let stockItems = [];
-                addLog("info", `Authorized customer *${partyName}* (+${senderNumber}). Querying BUSY stock items for firm ${activeFirm.name}...`);
+                addLog("info", `Authorized customer *${partyName}* (+${senderNumber}). Querying BUSY stock items for firm ${activeFirm.name}${targetMcName ? ` (MC: ${targetMcName})` : ''}...`);
                 try {
                     if (isBatchQuery) {
-                        const cleanSearch = searchKeyword.replace(/batch/gi, "").trim();
-                        stockItems = await BusyService.getBatchClosingStock(activeFirm, cleanSearch);
+                        stockItems = await BusyService.getBatchClosingStock(activeFirm, targetMcName);
                     } else {
-                        stockItems = await BusyService.getClosingStock(activeFirm, searchKeyword);
+                        stockItems = await BusyService.getClosingStock(activeFirm, "");
                     }
                 } catch (e) {
                     console.error(`Error querying stock for firm ${activeFirm.name}:`, e.message);
                 }
 
                 if (!stockItems || stockItems.length === 0) {
-                    addLog("warning", `No stock items found for +${senderNumber} in firm ${activeFirm.name}`);
-                    const noStockMsg = searchKeyword
-                        ? `📦 *Stock Status Update*\n🏢 *${activeFirm.companyName || activeFirm.name || 'BUSY Accounting'}*\n👤 Hello *${partyName}*,\n\n❌ No items found matching "${searchKeyword}".`
+                    addLog("warning", `No stock items found for +${senderNumber} in firm ${activeFirm.name}${targetMcName ? ` (MC: ${targetMcName})` : ''}`);
+                    const noStockMsg = targetMcName
+                        ? `📦 *Stock Status Update*\n🏢 *${activeFirm.companyName || activeFirm.name || 'BUSY Accounting'}*\n👤 Hello *${partyName}*,\n\n❌ No active batch stock records found for Material Center: *${targetMcName}*.`
                         : `📦 *Stock Status Update*\n🏢 *${activeFirm.companyName || activeFirm.name || 'BUSY Accounting'}*\n👤 Hello *${partyName}*,\n\n❌ No active stock records found.`;
                     await clientInstance.sendMessage(recipientChat, noStockMsg);
                     continue; // Continue to the next firm
